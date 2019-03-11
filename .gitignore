@@ -1,0 +1,12 @@
+
+*.tif
+*.zip
+*.dbf
+*.jp2
+*.sbn
+*.shx
+*.shp
+*.sbx
+*.prj
+*.cpg
+prueba.py
