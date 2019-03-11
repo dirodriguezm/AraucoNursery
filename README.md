@@ -9,6 +9,6 @@ Otherwise, the list of package to be installed are:<br>
 - matplotlib
 
 ### Conv Model
-Before everything, make sure you have **python version** on **version 3.5**.<br>
-The safer way to install tensorflow is to use conda as following: <br>
+Before everything, make sure that you have **python version** on **version 3.5**.<br>
+The safer way to install tensorflow is to use conda (inside the conda enviorment) as following: <br>
 ```conda install -c conda-forge tensorflow```
