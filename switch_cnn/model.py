@@ -1,6 +1,7 @@
 import tensorflow as tf
 from layers import conv_layer, maxpool_layer
 from conf import params
+import numpy as np
 
 class Regressor:
     def __init__(self,
@@ -11,6 +12,8 @@ class Regressor:
         self.r_name = name # Regressor type
         self.img_dim = img_dim
         self.channels = channels
+        tf.reset_default_graph()
+        self.sess = tf.Session()
 
         with tf.name_scope('input'):
             self.images = tf.placeholder(shape=[None,
@@ -23,6 +26,8 @@ class Regressor:
             self.counts = tf.placeholder(shape=[None, 1],
                                          dtype=tf.int32,
                                          name='output_counts')
+
+            tf.summary.image('input', self.images, 3)
 
         with tf.name_scope('arch_'+self.r_name):
             conv_0 = conv_layer(self.images,
@@ -96,8 +101,28 @@ class Regressor:
 
             self.output = mp_4
 
+            # ==================================================================
+            summ = tf.summary.merge_all()
+            saver = tf.train.Saver()
+            writer = tf.summary.FileWriter('./logs')
+            self.sess.run(tf.global_variables_initializer())
+            writer.add_graph(self.sess.graph)
+
+    def train(self, X_images, y_counts):
+
+        x = X_images
+        y = y_counts
+        output = self.sess.run([self.output], feed_dict={self.images:x,
+                                                       self.counts:y
+                                                      })
+        print(np.array(output).shape)
 
 if __name__ == "__main__":
+    synthetic_images = np.random.normal(0, 1, size=[10, 100, 100, 1])
+    synthetic_labels = np.random.randint(100, size=(10,1))
+
     r1 = Regressor(img_dim=(100,100),
                    channels=1,
                    name='r1')
+
+    r1.train(synthetic_images, synthetic_labels)
