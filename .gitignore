@@ -10,6 +10,5 @@
 *.prj
 *.cpg
 prueba.py
-.ipynb_checkpoints/dataset-checkpoint.ipynb
-.ipynb_checkpoints/dataset-checkpoint.ipynb
-.ipynb_checkpoints/dataset-checkpoint.ipynb
+.ipynb_checkpoints\dataset-checkpoint.ipynb
+*.xml
