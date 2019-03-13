@@ -1,3 +1,4 @@
+# pip install tf-nightly
 params = {'r1': {'kernel_0':(9,9),
                  'output_0':16,
                  'kernel_1':(7,7),

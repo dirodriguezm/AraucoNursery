@@ -29,7 +29,7 @@ class Regressor:
 
             tf.summary.image('input', self.images, 3)
 
-        with tf.name_scope('arch_'+self.r_name):
+        with tf.name_scope('ARCH_'+self.r_name):
             conv_0 = conv_layer(self.images,
                                 channels_in=self.channels,
                                 channels_out=params[self.r_name]['output_0'],
@@ -101,21 +101,36 @@ class Regressor:
 
             self.output = mp_4
 
-            # ==================================================================
-            summ = tf.summary.merge_all()
-            saver = tf.train.Saver()
-            writer = tf.summary.FileWriter('./logs')
-            self.sess.run(tf.global_variables_initializer())
-            writer.add_graph(self.sess.graph)
+        # ==================================================================
+        counts = tf.reduce_sum(self.output, [1, 2])
+        with tf.name_scope('loss'):
+            self.loss   = tf.losses.mean_squared_error(self.counts,
+                                                       counts,
+                                                       scope='Loss')
+            tf.summary.scalar("mse_loss", self.loss)
 
-    def train(self, X_images, y_counts):
+        with tf.name_scope('train'):
+            self.train_step = tf.train.AdamOptimizer().minimize(self.loss)
 
-        x = X_images
-        y = y_counts
-        output = self.sess.run([self.output], feed_dict={self.images:x,
-                                                       self.counts:y
-                                                      })
-        print(np.array(output).shape)
+        # ==================================================================
+        summ = tf.summary.merge_all()
+        saver = tf.train.Saver()
+        writer = tf.summary.FileWriter('./logs')
+        self.sess.run(tf.global_variables_initializer())
+        writer.add_graph(self.sess.graph)
+
+    def train(self, X_images, y_counts, n_epochs=100):
+        current_epoch = 0
+        while(current_epoch < n_epochs):
+            x = X_images
+            y = y_counts
+            loss, _ = self.sess.run([self.loss, self.train_step],
+                                    feed_dict={self.images:x,
+                                               self.counts:y
+                                              })
+            print('epoch: {0} - loss: {1}'.format(current_epoch, loss))
+            current_epoch+=1
+
 
 if __name__ == "__main__":
     synthetic_images = np.random.normal(0, 1, size=[10, 100, 100, 1])
