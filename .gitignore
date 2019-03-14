@@ -10,5 +10,7 @@
 *.prj
 *.cpg
 prueba.py
-.ipynb_checkpoints\dataset-checkpoint.ipynb
 *.xml
+.ipynb_checkpoints/*.ipynb
+train.rar
+.ipynb_checkpoints/dataset-checkpoint.ipynb
