@@ -2,6 +2,8 @@ import tensorflow as tf
 from layers import conv_layer, maxpool_layer
 from conf import params
 import numpy as np
+import math
+
 
 class Regressor:
     def __init__(self,
@@ -24,7 +26,7 @@ class Regressor:
                                          dtype=tf.float32,
                                          name='input_images')
 
-            self.counts = tf.placeholder(shape=[None, 1],
+            self.counts = tf.placeholder(shape=[None,1],
                                          dtype=tf.int32,
                                          name='output_counts')
 
@@ -124,26 +126,58 @@ class Regressor:
         self.writer.add_graph(self.sess.graph)
 
 
-    def train(self, X_images, y_counts, n_epochs=100):
+    def train(self, X_images, y_counts, x_val, y_val, batch_size=32, n_epochs=100):
+
+        n_samples = X_images.shape[0]
+        iterations = math.ceil(n_samples / batch_size)
+        it = 0
         current_epoch  = 0
         while(current_epoch < n_epochs):
-            x = X_images
-            y = y_counts
-            loss, _, sm = self.sess.run([self.loss, self.train_step, self.summaries],
-                                    feed_dict={self.images:x,
-                                               self.counts:y
-                                              })
-            self.writer.add_summary(sm, current_epoch)
-            print('epoch: {0} - loss: {1}'.format(current_epoch, loss))
+            down = 0
+            up = batch_size
+
+            epoch_loss = []
+            for _ in range(iterations):
+
+                x = X_images[down:up]
+                y = y_counts[down:up]
+                loss, _, sm = self.sess.run([self.loss, self.train_step, self.summaries],
+                                        feed_dict={self.images:x,
+                                                   self.counts:y
+                                                  })
+
+                epoch_loss.append(loss)
+                self.writer.add_summary(sm, it)
+
+                if it % 20 == 0:
+                    self.validation(x_val, y_val, batch_size=batch_size, current_epoch=current_epoch, current_it=it)
+                it+=1
+                down = up
+                up += batch_size
+
+            print('[TRAIN] epoch: {0} - iter: {1} loss: {2}'.format(current_epoch + 1, it + 1, np.mean(epoch_loss)))
             current_epoch+=1
 
 
-    def test(self, x_test, y_test, current_epoch):
-        loss, sm = self.sess.run([self.loss, self.summaries],
-                                    feed_dict={self.images: x_test,
-                                               self.counts: y_test
-                                               })
-        self.writer.add_summary(sm, current_epoch)
+    def validation(self, x_test, y_test, batch_size, current_epoch, current_it):
 
+        n_samples = x_test.shape[0]
+        iterations = math.ceil(n_samples / batch_size)
+        epoch_loss = []
+        down = 0
+        up = batch_size
+        for _ in range(iterations):
+            x = x_test[down:up]
+            y = y_test[down:up]
+            loss, sm = self.sess.run([self.loss, self.summaries],
+                                        feed_dict={self.images: x,
+                                                   self.counts: y
+                                                   })
 
-class
+            epoch_loss.append(loss)
+            down = up
+            up += batch_size
+
+            self.writer_test.add_summary(sm, current_epoch)
+        print('[VALIDA] epoch: {0} - iter: {1} loss: {2}'.format(current_epoch + 1, current_it + 1, np.mean(epoch_loss)))
+
