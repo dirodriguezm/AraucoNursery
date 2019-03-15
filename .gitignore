@@ -14,3 +14,9 @@ prueba.py
 .ipynb_checkpoints/*.ipynb
 train.rar
 .ipynb_checkpoints/dataset-checkpoint.ipynb
+*.mxd
+*.ovr
+*.Png
+PROYECTOS/falla.csv
+training.rar
+PROYECTOS/origen.csv
