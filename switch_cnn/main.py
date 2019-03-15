@@ -4,7 +4,10 @@ from models import Regressor
 from create_dataset import createDataRecord, load_image
 import os
 import pandas as pd
+import datetime
+import sys
 
+os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[1]
 
 if __name__ == "__main__":
 
@@ -40,13 +43,28 @@ if __name__ == "__main__":
     print('Train:{0}\nValidation:{1}\nTest:{2}'.format(train_images.shape, val_images.shape, test_images.shape))
 
 
+    dt= datetime.datetime.now()
+    proyect_name = str(dt.month)+'_'+str(dt.day)+'_'+str(dt.year)+'.'+str(dt.hour)+'_'+str(dt.minute)+'_'+str(dt.second)
     bs = 2
-
+    rotate = True
     r1 = Regressor(img_dim=(101,101),
-               channels=4,
-               name='r1',
-               lr=1e-6)
+                   channels=4,
+                   name='r1',
+                   lr=1e-6,
+                   save_path='./sessions/'+proyect_name,
+                   rotate=rotate)
 
-    r1.train(train_images, train_counts,val_images, val_counts, batch_size=bs)
+    with open(r1.save_path + '/setup.txt', 'a') as r1.out:
+        r1.out.write('Rotation: '+str(rotate) + '\n')
+        r1.out.write('TRAIN: ' + str(len(train_counts)) + '\n')
+        r1.out.write('VALIDATION: ' + str(len(val_counts)) + '\n')
+        r1.out.write('TEST: ' + str(len(test_counts)) + '\n')
 
+
+    r1.train(train_images, train_counts,
+             val_images, val_counts,
+             test_images, test_counts,
+             batch_size=bs,
+             n_epochs=1000,
+             stop_step=20)
 
