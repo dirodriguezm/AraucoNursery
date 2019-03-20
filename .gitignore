@@ -17,3 +17,6 @@
 *.ipynb
 *.png
 data.h5
+switch_cnn/__pycache__/
+switch_cnn/images/
+switch_cnn/sessions/
