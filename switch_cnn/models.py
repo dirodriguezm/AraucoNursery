@@ -10,6 +10,7 @@ class Regressor_1:
         self.lr = lr
         self.images = images
         self.counts = counts
+        self.keep_prob = tf.placeholder('float32', name='keep_prob')
 
         with tf.name_scope('ARCH_R1'):
             conv_0 = conv_layer(images,
@@ -70,8 +71,22 @@ class Regressor_1:
                                 strides=[1, 1, 1, 1],
                                 name='conv_4')
 
-            self.output = conv_4
+            flatten = tf.layers.flatten(conv_4, name='flatten')
 
+            fc_0    = tf.layers.dense(flatten, 512)
+            fc_0_d  = tf.nn.dropout(fc_0, keep_prob=self.keep_prob)
+
+            fc_1    = tf.layers.dense(fc_0_d, 256)
+
+            fc_2    = tf.layers.dense(fc_1, 128)
+            fc_2_d  = tf.nn.dropout(fc_2, keep_prob=self.keep_prob)
+
+            fc_3    = tf.layers.dense(fc_2_d, 64)
+
+            fc_4    = tf.layers.dense(fc_3, 1)
+            fc_4_d  = tf.nn.dropout(fc_4, keep_prob=self.keep_prob)
+
+            self.output = fc_4_d
 
     def get_logits(self):
         return self.output

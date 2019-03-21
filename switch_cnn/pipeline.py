@@ -1,6 +1,5 @@
 import tensorflow as tf
 from layers import conv_layer, maxpool_layer
-from conf import params
 from models import Regressor_1
 import numpy as np
 import os
@@ -89,17 +88,17 @@ class Pipeline:
 
         model = None
         if model_name == 'r1':
-            model = Regressor_1(x_train,
-                                y_train,
-                                lr=lr)
+            self.model = Regressor_1(x_train,
+                                     y_train,
+                                     lr=lr)
 
         with tf.name_scope('Logits_Transform'):
-            logits = model.get_logits()
-            pred_counts = tf.reduce_sum(logits, [1, 2])
+            logits = self.model.get_logits()
+            pred_counts = tf.nn.relu(logits, name='activated_output')
 
 
         with tf.name_scope('Loss'):
-            self.loss = model.generate_loss(pred_counts)
+            self.loss = self.model.generate_loss(pred_counts)
 
 
         with tf.name_scope('train'):
@@ -128,7 +127,8 @@ class Pipeline:
                                                      self.images,
                                                      self.counts,
                                                      self.train_step,
-                                                     self.summaries])
+                                                     self.summaries],
+                                                     feed_dict={self.model.keep_prob: 0.5})
                 epoch_train_loss.append(train_loss)
                 self.writer.add_summary(sm, self.it)
                 self.it += 1
@@ -151,7 +151,8 @@ class Pipeline:
                 val_loss,_,_,sm = self.sess.run([self.loss,
                                                  self.images,
                                                  self.counts,
-                                                 self.summaries])
+                                                 self.summaries],
+                                                 feed_dict={self.model.keep_prob: 1})
                 epoch_val_loss.append(val_loss)
                 self.writer_test.add_summary(sm, self.it)
                 self.it += 1
@@ -173,7 +174,8 @@ class Pipeline:
                 #Aqui no esta reutilizando los batches
                 test_loss,_,_= self.sess.run([self.loss,
                                               self.images,
-                                              self.counts])
+                                              self.counts],
+                                              feed_dict={self.model.keep_prob: 1})
                 epoch_test_loss.append(test_loss)
 
         except tf.errors.OutOfRangeError:
