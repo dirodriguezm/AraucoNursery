@@ -1,6 +1,6 @@
 import tensorflow as tf
 from layers import conv_layer, maxpool_layer
-from models import Regressor_1
+from models import Regressor_3
 import numpy as np
 import os
 import multiprocessing
@@ -83,8 +83,8 @@ class Pipeline:
             self.out.write('img dimensionality: ' + str(self.img_dimens) + '\n')
 
         model = None
-        if model_name == 'r1':
-            self.model = Regressor_1(x_train,
+        if model_name == 'r3':
+            self.model = Regressor_3(x_train,
                                      y_train,
                                      lr=lr)
 
@@ -217,4 +217,5 @@ class Pipeline:
                     nochanges += 1
 
             if nochanges == stop_step:
+                print('Early stopping at epoch: {}'.format(self.best_model_epoch))
                 break

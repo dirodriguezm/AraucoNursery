@@ -1,7 +1,7 @@
 import tensorflow as tf
 from layers import conv_layer, maxpool_layer
 
-class Regressor_1:
+class Regressor_3:
     def __init__(self,
                  images,
                  counts,
