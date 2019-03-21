@@ -61,23 +61,19 @@ class Pipeline:
     def construct_model(self, model_name='r1', lr=1e-6):
 
         self.images_rot_90 = tf.contrib.image.rotate(self.images, angles=90)
-        self.images_rot_180 = tf.contrib.image.rotate(self.images, angles=180)
-        self.images_rot_270 = tf.contrib.image.rotate(self.images, angles=270)
+        #self.images_rot_180 = tf.contrib.image.rotate(self.images, angles=180)
+        #self.images_rot_270 = tf.contrib.image.rotate(self.images, angles=270)
 
         x_train = tf.concat([self.images,
-                             self.images_rot_90,
-                             self.images_rot_180,
-                             self.images_rot_270], axis=0)
+                             self.images_rot_90], axis=0)
 
         y_train = tf.concat([self.counts,
-                             self.counts,
-                             self.counts,
                              self.counts], axis=0)
 
         tf.summary.image('image_angle_0', self.images, 1)
         tf.summary.image('image_angle_90', self.images_rot_90, 1)
-        tf.summary.image('image_angle_180', self.images_rot_180, 1)
-        tf.summary.image('image_angle_270', self.images_rot_270, 1)
+        #tf.summary.image('image_angle_180', self.images_rot_180, 1)
+        #tf.summary.image('image_angle_270', self.images_rot_270, 1)
 
 
 

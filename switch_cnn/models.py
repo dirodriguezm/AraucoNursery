@@ -15,8 +15,8 @@ class Regressor_1:
         with tf.name_scope('ARCH_R1'):
             conv_0 = conv_layer(images,
                                 channels_in=3,
-                                channels_out=16,
-                                filter_size=(9,9),
+                                channels_out=24,
+                                filter_size=(5,5),
                                 strides=[1,1,1,1],
                                 name='conv_0')
 
@@ -28,9 +28,9 @@ class Regressor_1:
             # ==================================================================
 
             conv_1 = conv_layer(mp_0,
-                                channels_in=16,
-                                channels_out=32,
-                                filter_size=(7,7),
+                                channels_in=24,
+                                channels_out=48,
+                                filter_size=(3,3),
                                 strides=[1,1,1,1],
                                 name='conv_1')
 
@@ -42,30 +42,25 @@ class Regressor_1:
             # ==================================================================
 
             conv_2 = conv_layer(mp_1,
-                                channels_in=32,
-                                channels_out=16,
-                                filter_size=(7,7),
+                                channels_in=48,
+                                channels_out=24,
+                                filter_size=(3,3),
                                 strides=[1,1,1,1],
                                 name='conv_2')
-
-            mp_2   = maxpool_layer(conv_2,
-                                   kernel_size=[2, 2],
-                                   strides=[1, 1, 1, 1],
-                                   name='maxpool_2')
 
             # ==================================================================
 
             conv_3 = conv_layer(mp_2,
-                                channels_in=16,
-                                channels_out=8,
-                                filter_size=(7,7),
+                                channels_in=24,
+                                channels_out=12,
+                                filter_size=(3,3),
                                 strides=[1,1,1,1],
                                 name='conv_3')
 
             # ==================================================================
 
             conv_4 = conv_layer(conv_3,
-                                channels_in=8,
+                                channels_in=12,
                                 channels_out=1,
                                 filter_size=(1,1),
                                 strides=[1, 1, 1, 1],
