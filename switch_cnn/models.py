@@ -50,7 +50,7 @@ class Regressor_1:
 
             # ==================================================================
 
-            conv_3 = conv_layer(mp_2,
+            conv_3 = conv_layer(conv_2,
                                 channels_in=24,
                                 channels_out=12,
                                 filter_size=(3,3),
