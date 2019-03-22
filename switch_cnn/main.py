@@ -15,7 +15,7 @@ if __name__ == "__main__":
     experiment_name = sys.argv[2]
     model_used      = sys.argv[3]
     n_epochs        = 1000
-    batch_size      = 32
+    batch_size      = 128
     # ===================================================
 
     with h5py.File('./images/data.h5', 'r') as hf:

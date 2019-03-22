@@ -81,7 +81,7 @@ class Regressor_3:
             fc_4    = tf.layers.dense(fc_3, 1)
             #fc_4_d  = tf.nn.dropout(fc_4, keep_prob=self.keep_prob)
 
-            self.output = fc_4_d
+            self.output = fc_4
 
     def get_logits(self):
         return self.output
