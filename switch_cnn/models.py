@@ -69,17 +69,17 @@ class Regressor_1:
             flatten = tf.layers.flatten(conv_4, name='flatten')
 
             fc_0    = tf.layers.dense(flatten, 512)
-            fc_0_d  = tf.nn.dropout(fc_0, keep_prob=self.keep_prob)
+            #fc_0_d  = tf.nn.dropout(fc_0, keep_prob=self.keep_prob)
 
-            fc_1    = tf.layers.dense(fc_0_d, 256)
+            fc_1    = tf.layers.dense(fc_0, 256)
 
             fc_2    = tf.layers.dense(fc_1, 128)
-            fc_2_d  = tf.nn.dropout(fc_2, keep_prob=self.keep_prob)
+            #fc_2_d  = tf.nn.dropout(fc_2, keep_prob=self.keep_prob)
 
-            fc_3    = tf.layers.dense(fc_2_d, 64)
+            fc_3    = tf.layers.dense(fc_2, 64)
 
             fc_4    = tf.layers.dense(fc_3, 1)
-            fc_4_d  = tf.nn.dropout(fc_4, keep_prob=self.keep_prob)
+            #fc_4_d  = tf.nn.dropout(fc_4, keep_prob=self.keep_prob)
 
             self.output = fc_4_d
 
