@@ -38,13 +38,13 @@ if __name__ == "__main__":
 
     pip.construct_model(model_name=model_used)
 
-    pip.fit(x_train, y_train[:, None], x_val, y_val[:, None],
-            n_epochs=n_epochs, stop_step=20)
-
-    pip.test(x_test, y_test[:,None])
-
-    # =====================================================
-
-    with h5py.File('./sessions/'+experiment_name+'/'+'test_set.h5', 'w') as hf:
-        hf.create_dataset("images",  data=x_test)
-        hf.create_dataset("counts",  data=y_test)
+    # pip.fit(x_train, y_train[:, None], x_val, y_val[:, None],
+    #         n_epochs=n_epochs, stop_step=20)
+    #
+    # pip.test(x_test, y_test[:,None])
+    #
+    # # =====================================================
+    #
+    # with h5py.File('./sessions/'+experiment_name+'/'+'test_set.h5', 'w') as hf:
+    #     hf.create_dataset("images",  data=x_test)
+    #     hf.create_dataset("counts",  data=y_test)

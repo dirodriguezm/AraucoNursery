@@ -1,5 +1,5 @@
 import tensorflow as tf
-from layers import conv_layer, maxpool_layer
+from layers import *
 
 class Regressor_3:
     def __init__(self,
@@ -15,35 +15,35 @@ class Regressor_3:
         with tf.name_scope('ARCH_R1'):
             conv_0 = conv_layer(images,
                                 channels_in=3,
-                                channels_out=24,
-                                filter_size=(5,5),
-                                strides=[1,1,1,1],
+                                channels_out=96,
+                                filter_size=(11,11),
+                                strides=[1,4,4,1],
                                 name='conv_0')
 
             mp_0   = maxpool_layer(conv_0,
-                                   kernel_size=[2,2],
-                                   strides=[1, 1, 1, 1],
+                                   kernel_size=[3,3],
+                                   strides=[1, 2, 2, 1],
                                    name='maxpool_0')
-
             # ==================================================================
 
             conv_1 = conv_layer(mp_0,
-                                channels_in=24,
-                                channels_out=48,
-                                filter_size=(3,3),
+                                channels_in=96,
+                                channels_out=256,
+                                filter_size=(5,5),
                                 strides=[1,1,1,1],
                                 name='conv_1')
 
-            mp_1   = maxpool_layer(conv_1,
-                                   kernel_size=[2,2],
-                                   strides=[1, 1, 1, 1],
-                                   name='maxpool_1')
+            norm_1 = lrn(conv_1, 2, 2e-05, 0.75, name='norm_1')
 
+            mp_1   = maxpool_layer(conv_1,
+                                   kernel_size=[3,3],
+                                   strides=[1, 2, 2, 1],
+                                   name='maxpool_1')
             # ==================================================================
 
             conv_2 = conv_layer(mp_1,
-                                channels_in=48,
-                                channels_out=24,
+                                channels_in=256,
+                                channels_out=384,
                                 filter_size=(3,3),
                                 strides=[1,1,1,1],
                                 name='conv_2')
@@ -93,3 +93,26 @@ class Regressor_3:
         tf.summary.scalar("mse_loss", loss)
 
         return loss
+
+class AlexNet(object):
+    """Implementation of the AlexNet."""
+
+    def __init__(self,
+                 images,
+                 counts,
+                 lr = 1e-6):
+
+        self.lr = lr
+        self.images = images
+        self.counts = counts
+        self.keep_prob = tf.placeholder('float32', name='keep_prob')
+
+        with tf.name_scope("AlexNet"):
+            conv_0 = conv_layer(images,
+                                channels_in=3,
+                                channels_out=96,
+                                filter_size=(11,11),
+                                strides=[1,4,4,1],
+                                name='conv_0')
+
+            norm_0 = lrn(conv_0, 2, 2e-05, 0.75, name='norm_0')
