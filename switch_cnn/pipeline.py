@@ -1,6 +1,6 @@
 import tensorflow as tf
 from layers import conv_layer, maxpool_layer
-from models import Regressor_3
+from models import Regressor_3, AlexNet
 import numpy as np
 import os
 import multiprocessing
@@ -60,33 +60,21 @@ class Pipeline:
 
     def construct_model(self, model_name='r1', lr=1e-6):
 
-        #self.images_rot_90 = tf.contrib.image.rotate(self.images, angles=90)
-        #self.images_rot_180 = tf.contrib.image.rotate(self.images, angles=180)
-        #self.images_rot_270 = tf.contrib.image.rotate(self.images, angles=270)
-
-        x_train = self.images #tf.concat([self.images,
-                  #             self.images_rot_90], axis=0)
-
-        y_train = self.counts #tf.concat([self.counts,
-                  #           self.counts], axis=0)
-
         tf.summary.image('image_angle_0', self.images, 1)
-        #tf.summary.image('image_angle_90', self.images_rot_90, 1)
-        #tf.summary.image('image_angle_180', self.images_rot_180, 1)
-        #tf.summary.image('image_angle_270', self.images_rot_270, 1)
-
-
 
         with open(self.save_path + '/setup.txt', 'a') as self.out:
             self.out.write('Architecture: ' + str(model_name)+ '\n')
             self.out.write('number of channels: ' + str(self.n_channels) + '\n')
             self.out.write('img dimensionality: ' + str(self.img_dimens) + '\n')
 
-        model = None
         if model_name == 'r3':
-            self.model = Regressor_3(x_train,
-                                     y_train,
+            self.model = Regressor_3(self.images,
+                                     self.counts,
                                      lr=lr)
+        if model_name == 'alexnet':
+            self.model = AlexNet(self.images,
+                                 self.counts,
+                                 lr=0.003)
 
         with tf.name_scope('Logits_Transform'):
             logits = self.model.get_logits()
@@ -94,8 +82,12 @@ class Pipeline:
 
 
         with tf.name_scope('Loss'):
-            self.loss = self.model.generate_loss(pred_counts)
-
+            # self.loss   = tf.losses.mean_squared_error(self.counts,
+            #                                       pred_counts,
+            #                                       scope='Loss')
+            self.loss = tf.reduce_mean(tf.square(pred_counts -
+                                       tf.cast(self.counts, 'float32')))
+            tf.summary.scalar("mse_loss", self.loss)
 
         with tf.name_scope('train'):
             self.train_step = tf.train.AdamOptimizer(lr).minimize(self.loss)
@@ -108,7 +100,7 @@ class Pipeline:
         self.writer_test = tf.summary.FileWriter(self.save_path+'/logs/test')
 
 
-    def train(self, x_train, y_train):
+    def train(self, x_train, y_train, keep_prob=0.5):
 
         epoch_train_loss = []
 
@@ -124,7 +116,8 @@ class Pipeline:
                                                      self.counts,
                                                      self.train_step,
                                                      self.summaries],
-                                                     feed_dict={self.model.keep_prob: 0.5})
+                        feed_dict={self.model.keep_prob: keep_prob})
+
                 epoch_train_loss.append(train_loss)
                 self.writer.add_summary(sm, self.it)
                 self.it += 1
@@ -183,7 +176,8 @@ class Pipeline:
 
 
 
-    def fit(self, x_train, y_train, x_val, y_val, n_epochs=10, stop_step=20):
+    def fit(self, x_train, y_train, x_val, y_val, n_epochs=10,
+            stop_step=20, keep_prob=0.5):
 
         # init variables
         self.sess.run(tf.local_variables_initializer())
@@ -197,7 +191,7 @@ class Pipeline:
         self.best_model_epoch  = n_epochs
 
         for epoch in range(n_epochs):
-            train_loss = self.train(x_train, y_train)
+            train_loss = self.train(x_train, y_train, keep_prob)
 
             if epoch % 2 == 0:
                 val_loss   = self.validation(x_val, y_val)
