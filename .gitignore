@@ -32,3 +32,16 @@ traindata.h5
 train/pixeles.csv
 traindata.h5
 train/pixeles.csv
+*.tfwx
+*.tfw
+*.lyr
+*.rar
+*.h5
+ventanas.csv
+cuentas.csv
+train/25/pixeles.csv
+train/25/mapa_densidad.txt
+train/24/pixeles.csv
+train/24/mapa_densidad.txt
+cuentas.csv
+corte_ventanas.ipynb
