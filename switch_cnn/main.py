@@ -15,11 +15,11 @@ if __name__ == "__main__":
     experiment_name = sys.argv[2]
     model_used      = sys.argv[3]
     n_epochs        = 1000
-    batch_size      = 128
+    batch_size      = 2
     keep_prob       = 0.8
     # ===================================================
 
-    with h5py.File('./images/data.h5', 'r') as hf:
+    with h5py.File('/home/diego/Proyecto Vivero/data/data_cuentas.h5', 'r') as hf:
         images = hf['images'].value[0:100]
         counts = hf['counts'].value[0:100]
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     pip = Pipeline(save_path='./sessions/'+experiment_name+'/')
 
-    pip.load_data(img_dimension=(101,101), n_channels=3)
+    pip.load_data(img_dimension=(100,100), n_channels=3)
 
     pip.create_batches(batch_size)
 

@@ -1,6 +1,6 @@
 import tensorflow as tf
 from layers import conv_layer, maxpool_layer
-from models import Regressor_3, AlexNet
+from models import Regressor_3, AlexNet, AlexNetMod
 import numpy as np
 import os
 import multiprocessing
@@ -75,6 +75,11 @@ class Pipeline:
             self.model = AlexNet(self.images,
                                  self.counts,
                                  lr=0.003)
+        if model_name == 'alexnetmod':
+            self.model = AlexNetMod(self.images, 
+                                    self.counts, 
+                                    lr=0.003)
+            
 
         with tf.name_scope('Logits_Transform'):
             logits = self.model.get_logits()
@@ -108,19 +113,22 @@ class Pipeline:
                       feed_dict={self.x: x_train,
                                  self.y: y_train})
 
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+
         try:
             while True:
                 #Aqui no esta reutilizando los batches
-                train_loss,_,_,_,sm = self.sess.run([self.loss,
-                                                     self.images,
-                                                     self.counts,
-                                                     self.train_step,
-                                                     self.summaries],
-                        feed_dict={self.model.keep_prob: keep_prob})
+                with tf.control_dependencies(update_ops):
+                    train_loss,_,_,_,sm = self.sess.run([self.loss,
+                                                        self.images,
+                                                        self.counts,
+                                                        self.train_step,
+                                                        self.summaries],
+                            feed_dict={self.model.keep_prob: keep_prob, self.model.is_train: True})
 
-                epoch_train_loss.append(train_loss)
-                self.writer.add_summary(sm, self.it)
-                self.it += 1
+                    epoch_train_loss.append(train_loss)
+                    self.writer.add_summary(sm, self.it)
+                    self.it += 1
 
         except tf.errors.OutOfRangeError:
             pass
@@ -141,7 +149,7 @@ class Pipeline:
                                                  self.images,
                                                  self.counts,
                                                  self.summaries],
-                                                 feed_dict={self.model.keep_prob: 1})
+                                                 feed_dict={self.model.keep_prob: 1, self.model.is_train: False})
                 epoch_val_loss.append(val_loss)
                 self.writer_test.add_summary(sm, self.it)
                 self.it += 1
@@ -164,7 +172,7 @@ class Pipeline:
                 test_loss,_,_= self.sess.run([self.loss,
                                               self.images,
                                               self.counts],
-                                              feed_dict={self.model.keep_prob: 1})
+                                              feed_dict={self.model.keep_prob: 1, self.model.is_train: False})
                 epoch_test_loss.append(test_loss)
 
         except tf.errors.OutOfRangeError:
@@ -182,7 +190,9 @@ class Pipeline:
         # init variables
         self.sess.run(tf.local_variables_initializer())
         self.sess.run(tf.global_variables_initializer())
-        self.writer.add_graph(self.sess.graph)
+        #self.writer.add_graph(self.sess.graph)
+        tf.summary.FileWriter("output", self.sess.graph)
+        exit(0)
         # Variable for early stopping
         best_loss = math.inf
         nochanges = 0 # count to break the train
