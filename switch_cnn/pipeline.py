@@ -1,6 +1,10 @@
 import tensorflow as tf
 from layers import conv_layer, maxpool_layer
+<<<<<<< HEAD
 from models import Regressor_3, AlexNet, AlexNetMod
+=======
+from models import Regressor_3, AlexNet, CRNN
+>>>>>>> 6c53052f2ca515f4088a528ca0017b574bcc725c
 import numpy as np
 import os
 import multiprocessing
@@ -16,11 +20,6 @@ class Pipeline:
             os.makedirs(self.save_path)
 
     def load_image(self, image, label):
-        #image_string = tf.read_file(path)
-        # Don't use tf.image.decode_image, or the output shape will be undefined
-        #image = tf.image.decode_png(image_string, channels=3)
-
-        # This will convert to float values in [0, 1]
         image = tf.image.convert_image_dtype(image, tf.float32)
         image = tf.image.resize_images(image, [self.img_dimens[0],
                                                self.img_dimens[1]])
@@ -49,6 +48,7 @@ class Pipeline:
         self.dataset_img = self.dataset_img.map(self.load_image,
                                                 num_parallel_calls=n_process)
 
+
     def create_batches(self, batch_size=32):
         batches = self.dataset_img.batch(batch_size)
         batches = batches.prefetch(buffer_size=1)
@@ -59,7 +59,7 @@ class Pipeline:
 
 
     def construct_model(self, model_name='r1', lr=1e-6):
-
+        self.model_name = model_name
         tf.summary.image('image_angle_0', self.images, 1)
 
         with open(self.save_path + '/setup.txt', 'a') as self.out:
@@ -80,26 +80,35 @@ class Pipeline:
                                     self.counts, 
                                     lr=0.003)
             
+        if model_name == 'lstm':
+            self.model = CRNN(self.images,
+                              self.counts,
+                              lr=0.003)
 
-        with tf.name_scope('Logits_Transform'):
-            logits = self.model.get_logits()
-            pred_counts = tf.nn.relu(logits, name='activated_output')
 
+        self.loss = self.model.loss()
 
-        with tf.name_scope('Loss'):
-            # self.loss   = tf.losses.mean_squared_error(self.counts,
-            #                                       pred_counts,
-            #                                       scope='Loss')
-            self.loss = tf.reduce_mean(tf.square(pred_counts -
-                                       tf.cast(self.counts, 'float32')))
-            tf.summary.scalar("mse_loss", self.loss)
+        tf.summary.scalar("loss", self.loss)
 
         with tf.name_scope('train'):
             self.train_step = tf.train.AdamOptimizer(lr).minimize(self.loss)
 
+        tf.add_to_collection(name='saved', value=self.loss)
+        tf.add_to_collection(name='saved', value=self.model.pred_counts)
+        if self.model_name == 'lstm':
+            tf.add_to_collection(name='saved', value=self.reconstruction)
+
+        tf.add_to_collection(name='placeholder', value=self.x)
+        tf.add_to_collection(name='placeholder', value=self.y)
+        tf.add_to_collection(name='placeholder', value=self.images)
+        tf.add_to_collection(name='placeholder', value=self.counts)
+        tf.add_to_collection(name='placeholder', value=self.model.keep_prob)
+        tf.add_to_collection(name='placeholder', value=self.model.is_training)
+        tf.add_to_collection(name='placeholder', value=self.iterator.initializer)
+
 
         self.summaries   = tf.summary.merge_all()
-        self.saver            = tf.train.Saver()
+        self.saver       = tf.train.Saver()
 
         self.writer      = tf.summary.FileWriter(self.save_path+'/logs/train')
         self.writer_test = tf.summary.FileWriter(self.save_path+'/logs/test')
@@ -117,18 +126,17 @@ class Pipeline:
 
         try:
             while True:
-                #Aqui no esta reutilizando los batches
-                with tf.control_dependencies(update_ops):
-                    train_loss,_,_,_,sm = self.sess.run([self.loss,
-                                                        self.images,
-                                                        self.counts,
-                                                        self.train_step,
-                                                        self.summaries],
-                            feed_dict={self.model.keep_prob: keep_prob, self.model.is_train: True})
+                train_loss,_,_,_,sm = self.sess.run([self.loss,
+                                                     self.images,
+                                                     self.counts,
+                                                     self.train_step,
+                                                     self.summaries],
+                        feed_dict={self.model.keep_prob: keep_prob,
+                                   self.model.is_training: True})
 
-                    epoch_train_loss.append(train_loss)
-                    self.writer.add_summary(sm, self.it)
-                    self.it += 1
+                epoch_train_loss.append(train_loss)
+                self.writer.add_summary(sm, self.it)
+                self.it += 1
 
         except tf.errors.OutOfRangeError:
             pass
@@ -149,7 +157,8 @@ class Pipeline:
                                                  self.images,
                                                  self.counts,
                                                  self.summaries],
-                                                 feed_dict={self.model.keep_prob: 1, self.model.is_train: False})
+                                                 feed_dict={self.model.keep_prob: 1,
+                                                            self.model.is_training: False})
                 epoch_val_loss.append(val_loss)
                 self.writer_test.add_summary(sm, self.it)
                 self.it += 1
@@ -172,7 +181,8 @@ class Pipeline:
                 test_loss,_,_= self.sess.run([self.loss,
                                               self.images,
                                               self.counts],
-                                              feed_dict={self.model.keep_prob: 1, self.model.is_train: False})
+                                              feed_dict={self.model.keep_prob: 1,
+                                                         self.model.is_training: False})
                 epoch_test_loss.append(test_loss)
 
         except tf.errors.OutOfRangeError:
@@ -209,6 +219,7 @@ class Pipeline:
                                                                         train_loss,
                                                                         val_loss))
                 if val_loss < best_loss:
+                    print('saving best model on epoch {0}'.format(epoch))
                     best_loss = val_loss
                     nochanges = 0
 
