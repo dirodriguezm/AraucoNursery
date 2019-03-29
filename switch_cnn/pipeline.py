@@ -86,7 +86,7 @@ class Pipeline:
 
         tf.add_to_collection(name='saved', value=self.loss)
         tf.add_to_collection(name='saved', value=self.model.pred_counts)
-        tf.add_to_collection(name='saved', value=self.pred_counts)
+        tf.add_to_collection(name='saved', value=self.model.pred_counts)
         if self.model_name == 'lstm':
             tf.add_to_collection(name='saved', value=self.reconstruction)
 
