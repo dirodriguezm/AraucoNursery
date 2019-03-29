@@ -95,7 +95,7 @@ class Pipeline:
         tf.add_to_collection(name='placeholder', value=self.counts)
         tf.add_to_collection(name='placeholder', value=self.model.keep_prob)
         tf.add_to_collection(name='placeholder', value=self.model.is_training)
-        tf.add_to_collection(name='placeholder', value=self.iterator)
+        tf.add_to_collection(name='placeholder', value=self.iterator.initializer)
 
 
         self.summaries   = tf.summary.merge_all()
