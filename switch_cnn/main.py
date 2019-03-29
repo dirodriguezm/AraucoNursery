@@ -23,7 +23,7 @@ if __name__ == "__main__":
         images = hf['images'].value
         counts = hf['counts'].value
 
-    print('img size: ',images.shape)
+    dimensions = images.shape
     x_train, x_rest, y_train, y_rest = train_test_split(
     images, counts, test_size=0.4, random_state=42, shuffle=True)
 
@@ -34,7 +34,8 @@ if __name__ == "__main__":
 
     pip = Pipeline(save_path='./sessions/'+experiment_name+'/')
 
-    pip.load_data(img_dimension=(101,101), n_channels=3)
+    pip.load_data(img_dimension=(dimensions[1],dimensions[2]),
+                  n_channels=dimensions[3])
 
     pip.create_batches(batch_size)
 
