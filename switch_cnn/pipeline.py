@@ -1,6 +1,6 @@
 import tensorflow as tf
 from layers import conv_layer, maxpool_layer
-from models import Regressor_3, AlexNet
+from models import Regressor_3, AlexNet, CRNN
 import numpy as np
 import os
 import multiprocessing
@@ -56,7 +56,8 @@ class Pipeline:
         self.iterator = batches.make_initializable_iterator()
 
         self.images, self.counts = self.iterator.get_next()
-
+        tf.add_to_collection(name='placeholder', value=self.images)
+        tf.add_to_collection(name='placeholder', value=self.counts)
 
     def construct_model(self, model_name='r1', lr=1e-6):
 
@@ -75,18 +76,26 @@ class Pipeline:
             self.model = AlexNet(self.images,
                                  self.counts,
                                  lr=0.003)
+        if model_name == 'lstm':
+            self.model = CRNN(self.images,
+                                 self.counts,
+                                 lr=0.003)
 
         with tf.name_scope('Logits_Transform'):
             logits = self.model.get_logits()
-            pred_counts = tf.nn.relu(logits, name='activated_output')
+            self.pred_counts = tf.nn.relu(logits, name='activated_output')
 
 
         with tf.name_scope('Loss'):
             # self.loss   = tf.losses.mean_squared_error(self.counts,
             #                                       pred_counts,
             #                                       scope='Loss')
-            self.loss = tf.reduce_mean(tf.square(pred_counts -
+            self.loss = tf.reduce_mean(tf.square(self.pred_counts -
                                        tf.cast(self.counts, 'float32')))
+
+            tf.add_to_collection(name='saved', value=self.loss)
+            tf.add_to_collection(name='saved', value=self.pred_counts)
+
             tf.summary.scalar("mse_loss", self.loss)
 
         with tf.name_scope('train'):
@@ -116,7 +125,8 @@ class Pipeline:
                                                      self.counts,
                                                      self.train_step,
                                                      self.summaries],
-                        feed_dict={self.model.keep_prob: keep_prob})
+                        feed_dict={self.model.keep_prob: keep_prob,
+                                   self.model.is_training: True})
 
                 epoch_train_loss.append(train_loss)
                 self.writer.add_summary(sm, self.it)
@@ -141,7 +151,8 @@ class Pipeline:
                                                  self.images,
                                                  self.counts,
                                                  self.summaries],
-                                                 feed_dict={self.model.keep_prob: 1})
+                                                 feed_dict={self.model.keep_prob: 1,
+                                                            self.model.is_training: False})
                 epoch_val_loss.append(val_loss)
                 self.writer_test.add_summary(sm, self.it)
                 self.it += 1
@@ -164,7 +175,8 @@ class Pipeline:
                 test_loss,_,_= self.sess.run([self.loss,
                                               self.images,
                                               self.counts],
-                                              feed_dict={self.model.keep_prob: 1})
+                                              feed_dict={self.model.keep_prob: 1,
+                                                         self.model.is_training: False})
                 epoch_test_loss.append(test_loss)
 
         except tf.errors.OutOfRangeError:

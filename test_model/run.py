@@ -4,11 +4,14 @@ import h5py
 
 
 if __name__ == "__main__":
-    model_path = './saved_model/r3final'
+    model_path = './saved_model/r3_newimages'
 
-    with h5py.File('./saved_model/r3final/test_set.h5', 'r') as hf:
-        images = hf['images'].value[0:100]
-        counts = hf['counts'].value[0:100]
+    model_path = './saved_model/final2/'
+    dir_whole = '../images/data_cuentas.h5'
+    dir_model = model_path+'test_set.h5'
+    with h5py.File(dir_whole, 'r') as hf:
+        images = hf['images'].value
+        counts = hf['counts'].value
 
 
     model = RestoreModel(model_path)

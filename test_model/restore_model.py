@@ -149,7 +149,7 @@ class RestoreModel:
             # init variables
             sess.run(tf.local_variables_initializer())
             sess.run(tf.global_variables_initializer())
-            self.writer.add_graph(sess.graph)
+            #self.writer.add_graph(sess.graph)
 
             sess.run(self.iterator.initializer,
                      feed_dict={self.x: images,

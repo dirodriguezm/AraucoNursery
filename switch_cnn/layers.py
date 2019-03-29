@@ -2,7 +2,7 @@ import tensorflow as tf
 
 
 def conv_layer(input, channels_in, channels_out, filter_size=(5,5),
-               strides=[1, 1, 1, 1], name='conv'):
+               strides=[1, 1, 1, 1], name='conv', is_training=True):
 
     with tf.name_scope(name):
         W = tf.Variable(tf.truncated_normal([filter_size[0],
@@ -20,6 +20,7 @@ def conv_layer(input, channels_in, channels_out, filter_size=(5,5),
                             name='conv_layer')
 
         conv = tf.nn.bias_add(conv, B)
+        conv = tf.layers.batch_normalization(conv, training=is_training)
 
         # Saving in Tensorboad
         tf.summary.histogram("weights", W)

@@ -10,7 +10,9 @@ class Regressor_3:
         self.lr = lr
         self.images = images
         self.counts = counts
+        # Probabilidad de prender una neurona
         self.keep_prob = tf.placeholder('float32', name='keep_prob')
+        self.is_training = tf.placeholder(tf.bool, name="is_train");
 
         with tf.name_scope('ARCH_R1'):
             conv_0 = conv_layer(images,
@@ -18,12 +20,14 @@ class Regressor_3:
                                 channels_out=24,
                                 filter_size=(5,5),
                                 strides=[1,1,1,1],
-                                name='conv_0')
+                                name='conv_0',
+                                is_training=self.is_training)
 
             mp_0   = maxpool_layer(conv_0,
                                    kernel_size=[2,2],
                                    strides=[1, 2, 2, 1],
                                    name='maxpool_0')
+
             # ==================================================================
 
             conv_1 = conv_layer(mp_0,
@@ -31,7 +35,8 @@ class Regressor_3:
                                 channels_out=48,
                                 filter_size=(3,3),
                                 strides=[1,1,1,1],
-                                name='conv_1')
+                                name='conv_1',
+                                is_training=self.is_training)
 
             mp_1   = maxpool_layer(conv_1,
                                    kernel_size=[3,3],
@@ -44,7 +49,8 @@ class Regressor_3:
                                 channels_out=24,
                                 filter_size=(3,3),
                                 strides=[1,1,1,1],
-                                name='conv_2')
+                                name='conv_2',
+                                is_training=self.is_training)
 
             # ==================================================================
 
@@ -53,7 +59,8 @@ class Regressor_3:
                                 channels_out=12,
                                 filter_size=(3,3),
                                 strides=[1,1,1,1],
-                                name='conv_3')
+                                name='conv_3',
+                                is_training=self.is_training)
 
             # ==================================================================
 
@@ -62,7 +69,8 @@ class Regressor_3:
                                 channels_out=1,
                                 filter_size=(1,1),
                                 strides=[1, 1, 1, 1],
-                                name='conv_4')
+                                name='conv_4',
+                                is_training=self.is_training)
 
             flatten = tf.layers.flatten(conv_4, name='flatten')
 
@@ -77,6 +85,8 @@ class Regressor_3:
             fc_4    = tf.layers.dense(fc_3, 1)
 
             self.output = fc_4
+
+            tf.add_to_collection(name='saved', value=self.output)
 
     def get_logits(self):
         return self.output
@@ -184,6 +194,99 @@ class AlexNet(object):
             fc_7    = fc_layer(fc_6, 4096, 1, name='fc_7')
 
             self.output = fc_7
+
+    def get_logits(self):
+        return self.output
+
+class CRNN:
+    def __init__(self,
+                 images,
+                 counts,
+                 lr = 1e-6):
+
+        self.lr = lr
+        self.images = images
+        self.counts = counts
+        # Probabilidad de prender una neurona
+        self.keep_prob = tf.placeholder('float32', name='keep_prob')
+        self.is_training = tf.placeholder(tf.bool, name="is_train")
+
+        self.cell   = tf.contrib.rnn.LayerNormBasicLSTMCell(128,
+                                            dropout_keep_prob=self.keep_prob)
+
+
+        with tf.name_scope('ARCH_R1'):
+            conv_0 = conv_layer(images,
+                                channels_in=3,
+                                channels_out=24,
+                                filter_size=(5,5),
+                                strides=[1,1,1,1],
+                                name='conv_0',
+                                is_training=self.is_training)
+
+            mp_0   = maxpool_layer(conv_0,
+                                   kernel_size=[2,2],
+                                   strides=[1, 2, 2, 1],
+                                   name='maxpool_0')
+
+            # ==================================================================
+
+            conv_1 = conv_layer(mp_0,
+                                channels_in=24,
+                                channels_out=48,
+                                filter_size=(3,3),
+                                strides=[1,1,1,1],
+                                name='conv_1',
+                                is_training=self.is_training)
+
+            mp_1   = maxpool_layer(conv_1,
+                                   kernel_size=[3,3],
+                                   strides=[1, 2, 2, 1],
+                                   name='maxpool_1')
+            # ==================================================================
+
+            conv_2 = conv_layer(mp_1,
+                                channels_in=48,
+                                channels_out=24,
+                                filter_size=(3,3),
+                                strides=[1,1,1,1],
+                                name='conv_2',
+                                is_training=self.is_training)
+
+            # ==================================================================
+
+            conv_3 = conv_layer(conv_2,
+                                channels_in=24,
+                                channels_out=12,
+                                filter_size=(3,3),
+                                strides=[1,1,1,1],
+                                name='conv_3',
+                                is_training=self.is_training)
+
+            # ==================================================================
+
+            conv_4 = conv_layer(conv_3,
+                                channels_in=12,
+                                channels_out=1,
+                                filter_size=(1,1),
+                                strides=[1, 1, 1, 1],
+                                name='conv_4',
+                                is_training=self.is_training)
+
+            flatten = tf.layers.flatten(conv_4, name='flatten')
+
+            fc_1 = tf.reshape(flatten, shape=(-1, flatten.shape[1], 1))
+            output_rnn, \
+            last_state  = tf.nn.dynamic_rnn(self.cell,
+                                           fc_1,
+                                           dtype='float32')
+
+            output_rnn = output_rnn[...,-1]
+
+            fc_4    = tf.layers.dense(output_rnn, 1)
+            self.output = fc_4
+
+            tf.add_to_collection(name='saved', value=self.output)
 
     def get_logits(self):
         return self.output
