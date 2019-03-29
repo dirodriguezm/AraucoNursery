@@ -78,29 +78,18 @@ class Pipeline:
                                  lr=0.003)
         if model_name == 'lstm':
             self.model = CRNN(self.images,
-                                 self.counts,
-                                 lr=0.003)
-
-        with tf.name_scope('Logits_Transform'):
-            logits = self.model.get_logits()
-            self.pred_counts = tf.nn.relu(logits, name='activated_output')
+                              self.counts,
+                              lr=0.003)
 
 
-        with tf.name_scope('Loss'):
-            # self.loss   = tf.losses.mean_squared_error(self.counts,
-            #                                       pred_counts,
-            #                                       scope='Loss')
-            self.loss = tf.reduce_mean(tf.square(self.pred_counts -
-                                       tf.cast(self.counts, 'float32')))
+        self.loss = self.model.loss()
 
-            tf.add_to_collection(name='saved', value=self.loss)
-            tf.add_to_collection(name='saved', value=self.pred_counts)
-
-            tf.summary.scalar("mse_loss", self.loss)
+        tf.summary.scalar("loss", self.loss)
 
         with tf.name_scope('train'):
             self.train_step = tf.train.AdamOptimizer(lr).minimize(self.loss)
 
+        tf.add_to_collection(name='saved', value=self.loss)
 
         self.summaries   = tf.summary.merge_all()
         self.saver            = tf.train.Saver()
