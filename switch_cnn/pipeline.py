@@ -86,7 +86,6 @@ class Pipeline:
 
         tf.add_to_collection(name='saved', value=self.loss)
         tf.add_to_collection(name='saved', value=self.model.pred_counts)
-        tf.add_to_collection(name='saved', value=self.model.pred_counts)
         if self.model_name == 'lstm':
             tf.add_to_collection(name='saved', value=self.reconstruction)
 
@@ -96,6 +95,7 @@ class Pipeline:
         tf.add_to_collection(name='placeholder', value=self.counts)
         tf.add_to_collection(name='placeholder', value=self.model.keep_prob)
         tf.add_to_collection(name='placeholder', value=self.model.is_training)
+        tf.add_to_collection(name='placeholder', value=self.iterator)
 
 
         self.summaries   = tf.summary.merge_all()
