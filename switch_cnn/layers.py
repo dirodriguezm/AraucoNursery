@@ -5,12 +5,8 @@ def conv_layer(input, channels_in, channels_out, filter_size=(5,5),
                strides=[1, 1, 1, 1], name='conv'):
 
     with tf.name_scope(name):
-        W = tf.Variable(tf.truncated_normal([filter_size[0],
-                                             filter_size[1],
-                                             channels_in,
-                                             channels_out],
-                                             stddev=0.1),
-                        name='W')
+        W = tf.Variable('W', shape = [filter_size[0],filter_size[1]],
+                        initializer = tf.contrib.layers.variance_scaling_inicializer())
         B = tf.Variable(tf.constant(0.1, shape=[channels_out]), name='B')
 
         conv = tf.nn.conv2d(input,
