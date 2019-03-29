@@ -99,7 +99,7 @@ class Pipeline:
 
 
         self.summaries   = tf.summary.merge_all()
-        self.saver            = tf.train.Saver()
+        self.saver       = tf.train.Saver()
 
         self.writer      = tf.summary.FileWriter(self.save_path+'/logs/train')
         self.writer_test = tf.summary.FileWriter(self.save_path+'/logs/test')
@@ -115,7 +115,6 @@ class Pipeline:
 
         try:
             while True:
-                #Aqui no esta reutilizando los batches
                 train_loss,_,_,_,sm = self.sess.run([self.loss,
                                                      self.images,
                                                      self.counts,
@@ -207,6 +206,7 @@ class Pipeline:
                                                                         train_loss,
                                                                         val_loss))
                 if val_loss < best_loss:
+                    print('saving best model on epoch {0}'.format(epoch))
                     best_loss = val_loss
                     nochanges = 0
 
