@@ -205,7 +205,7 @@ class AlexNet(object):
 
             self.pred_counts = tf.nn.relu(fc_7,
                                           name='activated_output')
-
+            tf.summary.tensor_summary('pred_counts', self.pred_counts)
 
     def loss(self):
         with tf.name_scope('Loss'):

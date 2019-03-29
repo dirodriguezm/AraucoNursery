@@ -15,7 +15,7 @@ if __name__ == "__main__":
     experiment_name = sys.argv[2]
     model_used      = sys.argv[3]
     n_epochs        = 1000
-    batch_size      = 128
+    batch_size      = 64
     keep_prob       = 0.8
     # ===================================================
 
