@@ -16,11 +16,6 @@ class Pipeline:
             os.makedirs(self.save_path)
 
     def load_image(self, image, label):
-        #image_string = tf.read_file(path)
-        # Don't use tf.image.decode_image, or the output shape will be undefined
-        #image = tf.image.decode_png(image_string, channels=3)
-
-        # This will convert to float values in [0, 1]
         image = tf.image.convert_image_dtype(image, tf.float32)
         image = tf.image.resize_images(image, [self.img_dimens[0],
                                                self.img_dimens[1]])
@@ -49,6 +44,7 @@ class Pipeline:
         self.dataset_img = self.dataset_img.map(self.load_image,
                                                 num_parallel_calls=n_process)
 
+
     def create_batches(self, batch_size=32):
         batches = self.dataset_img.batch(batch_size)
         batches = batches.prefetch(buffer_size=1)
@@ -56,11 +52,10 @@ class Pipeline:
         self.iterator = batches.make_initializable_iterator()
 
         self.images, self.counts = self.iterator.get_next()
-        tf.add_to_collection(name='placeholder', value=self.images)
-        tf.add_to_collection(name='placeholder', value=self.counts)
+
 
     def construct_model(self, model_name='r1', lr=1e-6):
-
+        self.model_name = model_name
         tf.summary.image('image_angle_0', self.images, 1)
 
         with open(self.save_path + '/setup.txt', 'a') as self.out:
@@ -90,6 +85,18 @@ class Pipeline:
             self.train_step = tf.train.AdamOptimizer(lr).minimize(self.loss)
 
         tf.add_to_collection(name='saved', value=self.loss)
+        tf.add_to_collection(name='saved', value=self.model.pred_counts)
+        tf.add_to_collection(name='saved', value=self.pred_counts)
+        if self.model_name == 'lstm':
+            tf.add_to_collection(name='saved', value=self.reconstruction)
+
+        tf.add_to_collection(name='placeholder', value=self.x)
+        tf.add_to_collection(name='placeholder', value=self.y)
+        tf.add_to_collection(name='placeholder', value=self.images)
+        tf.add_to_collection(name='placeholder', value=self.counts)
+        tf.add_to_collection(name='placeholder', value=self.model.keep_prob)
+        tf.add_to_collection(name='placeholder', value=self.model.is_training)
+
 
         self.summaries   = tf.summary.merge_all()
         self.saver            = tf.train.Saver()

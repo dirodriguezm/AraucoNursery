@@ -89,7 +89,6 @@ class Regressor_3:
 
             self.pred_counts = tf.nn.relu(fc_4,
                                           name='activated_output')
-            tf.add_to_collection(name='saved', value=self.pred_counts)
 
 
     def loss(self):
@@ -206,7 +205,6 @@ class AlexNet(object):
 
             self.pred_counts = tf.nn.relu(fc_7,
                                           name='activated_output')
-            tf.add_to_collection(name='saved', value=self.pred_counts)
 
 
     def loss(self):
@@ -311,8 +309,6 @@ class CRNN:
                                           name='activated_output')
             self.reconstruction = tf.nn.sigmoid(out_10)
             tf.summary.image('reconstruction', self.reconstruction, 1)
-            tf.add_to_collection(name='saved', value=self.pred_counts)
-            tf.add_to_collection(name='saved', value=self.reconstruction)
 
 
     def loss(self):
