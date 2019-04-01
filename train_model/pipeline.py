@@ -1,6 +1,6 @@
 import tensorflow as tf
 from layers import conv_layer, maxpool_layer
-from models import Regressor_3, AlexNet, CRNN
+from models import Regressor_3, AlexNet, CRNN, MCNN
 import numpy as np
 import os
 import multiprocessing
@@ -22,7 +22,8 @@ class Pipeline:
         image = tf.image.per_image_standardization(image)
         return image, label
 
-    def load_data(self, img_dimension=(5,5), n_channels=3):
+    def load_data(self, img_dimension=(5,5),
+                  n_channels=3, target_dim = [None, 1]):
 
         self.x = tf.placeholder('float32',
                                  shape=[None,
@@ -33,7 +34,7 @@ class Pipeline:
                                  name='input_images')
 
         self.y = tf.placeholder('int32',
-                                 shape=[None, 1],
+                                 shape=target_dim,
                                  name='counts_images')
 
         self.img_dimens = img_dimension
@@ -51,12 +52,12 @@ class Pipeline:
 
         self.iterator = batches.make_initializable_iterator()
 
-        self.images, self.counts = self.iterator.get_next()
+        self.images, self.target = self.iterator.get_next()
 
 
     def construct_model(self, model_name='r1', lr=1e-6):
         self.model_name = model_name
-        tf.summary.image('image_angle_0', self.images, 1)
+        tf.summary.image('image', self.images, 1)
 
         with open(self.save_path + '/setup.txt', 'a') as self.out:
             self.out.write('Architecture: ' + str(model_name)+ '\n')
@@ -65,17 +66,19 @@ class Pipeline:
 
         if model_name == 'r3':
             self.model = Regressor_3(self.images,
-                                     self.counts,
+                                     self.target,
                                      lr=lr)
         if model_name == 'alexnet':
             self.model = AlexNet(self.images,
-                                 self.counts,
+                                 self.target,
                                  lr=0.003)
         if model_name == 'lstm':
             self.model = CRNN(self.images,
-                              self.counts,
+                              self.target,
                               lr=0.003)
-
+        if model_name == 'multicolumn':
+            tf.summary.image('density_gt', self.target, 1)
+            self.model = MCNN(images=self.images, density=self.target)
 
         self.loss = self.model.loss()
 
@@ -85,14 +88,14 @@ class Pipeline:
             self.train_step = tf.train.AdamOptimizer(lr).minimize(self.loss)
 
         tf.add_to_collection(name='saved', value=self.loss)
-        tf.add_to_collection(name='saved', value=self.model.pred_counts)
+        tf.add_to_collection(name='saved', value=self.model.prediction)
         if self.model_name == 'lstm':
             tf.add_to_collection(name='saved', value=self.reconstruction)
 
         tf.add_to_collection(name='placeholder', value=self.x)
         tf.add_to_collection(name='placeholder', value=self.y)
         tf.add_to_collection(name='placeholder', value=self.images)
-        tf.add_to_collection(name='placeholder', value=self.counts)
+        tf.add_to_collection(name='placeholder', value=self.target)
         tf.add_to_collection(name='placeholder', value=self.model.keep_prob)
         tf.add_to_collection(name='placeholder', value=self.model.is_training)
         tf.add_to_collection(name='placeholder', value=self.iterator.initializer)
@@ -117,7 +120,7 @@ class Pipeline:
             while True:
                 train_loss,_,_,_,sm = self.sess.run([self.loss,
                                                      self.images,
-                                                     self.counts,
+                                                     self.target,
                                                      self.train_step,
                                                      self.summaries],
                         feed_dict={self.model.keep_prob: keep_prob,
@@ -144,7 +147,7 @@ class Pipeline:
                 #Aqui no esta reutilizando los batches
                 val_loss,_,_,sm = self.sess.run([self.loss,
                                                  self.images,
-                                                 self.counts,
+                                                 self.target,
                                                  self.summaries],
                                                  feed_dict={self.model.keep_prob: 1,
                                                             self.model.is_training: False})
@@ -169,7 +172,7 @@ class Pipeline:
                 #Aqui no esta reutilizando los batches
                 test_loss,_,_= self.sess.run([self.loss,
                                               self.images,
-                                              self.counts],
+                                              self.target],
                                               feed_dict={self.model.keep_prob: 1,
                                                          self.model.is_training: False})
                 epoch_test_loss.append(test_loss)
@@ -206,7 +209,6 @@ class Pipeline:
                                                                         train_loss,
                                                                         val_loss))
                 if val_loss < best_loss:
-                    print('saving best model on epoch {0}'.format(epoch))
                     best_loss = val_loss
                     nochanges = 0
 

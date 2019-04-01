@@ -87,13 +87,13 @@ class Regressor_3:
 
         with tf.name_scope('Logits_Transform'):
 
-            self.pred_counts = tf.nn.relu(fc_4,
+            self.prediction = tf.nn.relu(fc_4,
                                           name='activated_output')
 
 
     def loss(self):
         with tf.name_scope('Loss'):
-            loss = tf.reduce_mean(tf.square(self.pred_counts -
+            loss = tf.reduce_mean(tf.square(self.prediction -
                                   tf.cast(self.counts, 'float32')))
 
             return loss
@@ -203,13 +203,13 @@ class AlexNet(object):
 
         with tf.name_scope('Logits_Transform'):
 
-            self.pred_counts = tf.nn.relu(fc_7,
+            self.prediction = tf.nn.relu(fc_7,
                                           name='activated_output')
-            tf.summary.tensor_summary('pred_counts', self.pred_counts)
+            tf.summary.tensor_summary('pred_counts', self.prediction)
 
     def loss(self):
         with tf.name_scope('Loss'):
-            loss = tf.reduce_mean(tf.square(self.pred_counts -
+            loss = tf.reduce_mean(tf.square(self.prediction -
                                   tf.cast(self.counts, 'float32')))
 
             return loss
@@ -305,7 +305,7 @@ class CRNN:
 
         with tf.name_scope('Logits_Transform'):
 
-            self.pred_counts = tf.nn.relu(out_11,
+            self.prediction = tf.nn.relu(out_11,
                                           name='activated_output')
             self.reconstruction = tf.nn.sigmoid(out_10)
             tf.summary.image('reconstruction', self.reconstruction, 1)
@@ -313,7 +313,7 @@ class CRNN:
 
     def loss(self):
         with tf.name_scope('Loss'):
-            loss_regressor = tf.reduce_mean(tf.square(self.pred_counts -
+            loss_regressor = tf.reduce_mean(tf.square(self.prediction -
                                       tf.cast(self.counts, 'float32')))
 
             loss_reconstruction = tf.nn.l2_loss(self.images -
@@ -321,4 +321,189 @@ class CRNN:
 
             loss = loss_regressor + loss_reconstruction
 
+            return loss
+
+
+class MCNN:
+    def __init__(self,
+                 images,
+                 density,
+                 lr = 1e-4):
+        self.images = images
+        self.density = density
+        self.lr = lr
+        self.is_training = tf.placeholder(tf.bool,name="is_train")
+        self.keep_prob = tf.placeholder('float32', name='keep_prob')
+
+        with tf.name_scope("MultiColumn"):
+
+            #9x9 layers
+            # =================================================================
+            conv1_0 = conv_layer(images,
+                                channels_in=3,
+                                channels_out=16,
+                                filter_size=(9,9),
+                                strides=[1,1,1,1],
+                                name='conv1_0',
+                                is_training=self.is_training)
+            conv1_0 = tf.nn.relu(conv1_0)
+            conv1_0 = maxpool_layer(conv1_0,
+                                    kernel_size=[2,2],
+                                    strides=[1, 2, 2, 1],
+                                    name='maxpool_1')
+
+
+
+            conv2_0 = conv_layer(conv1_0,
+                                 channels_in=16,
+                                 channels_out=32,
+                                 filter_size=(7,7),
+                                 strides=[1,1,1,1],
+                                 name='conv2_0',
+                                 is_training=self.is_training)
+            conv2_0 = tf.nn.relu(conv2_0)
+            conv2_0 = maxpool_layer(conv2_0,
+                                    kernel_size=[2,2],
+                                    strides=[1, 2, 2, 1],
+                                    name='maxpool_1')
+
+
+            conv3_0 = conv_layer(conv2_0,
+                                channels_in=32,
+                                channels_out=16,
+                                filter_size=(7,7),
+                                strides=[1,1,1,1],
+                                name='conv3_0',
+                                is_training=self.is_training)
+            conv3_0 = tf.nn.relu(conv3_0)
+            conv4_0 = conv_layer(conv3_0,
+                                channels_in=16,
+                                channels_out=8,
+                                filter_size=(7,7),
+                                strides=[1,1,1,1],
+                                name='conv4_0',
+                                is_training=self.is_training)
+            conv4_0 = tf.nn.relu(conv4_0)
+
+
+            # 7x7 layer
+            # =================================================================
+            conv1_1 = conv_layer(images,
+                                channels_in=3,
+                                channels_out=20,
+                                filter_size=(7,7),
+                                strides=[1,1,1,1],
+                                name='conv1_0',
+                                is_training=self.is_training)
+            conv1_1 = tf.nn.relu(conv1_1)
+            conv1_1 = maxpool_layer(conv1_1,
+                                    kernel_size=[2,2],
+                                    strides=[1, 2, 2, 1],
+                                    name='maxpool_1')
+
+
+
+            conv2_1 = conv_layer(conv1_1,
+                                channels_in=20,
+                                channels_out=40,
+                                filter_size=(5,5),
+                                strides=[1,1,1,1],
+                                name='conv2_0',
+                                is_training=self.is_training)
+            conv2_1 = tf.nn.relu(conv2_1)
+            conv2_1 = maxpool_layer(conv2_1,
+                                    kernel_size=[2,2],
+                                    strides=[1, 2, 2, 1],
+                                    name='maxpool_1')
+
+
+            conv3_1 = conv_layer(conv2_1,
+                                channels_in=40,
+                                channels_out=20,
+                                filter_size=(5,5),
+                                strides=[1,1,1,1],
+                                name='conv3_0',
+                                is_training=self.is_training)
+            conv3_1 = tf.nn.relu(conv3_1)
+            conv4_1 = conv_layer(conv3_1,
+                                channels_in=20,
+                                channels_out=10,
+                                filter_size=(5,5),
+                                strides=[1,1,1,1],
+                                name='conv4_0',
+                                is_training=self.is_training)
+            conv4_1 = tf.nn.relu(conv4_1)
+
+            # 5x5 layer
+            # =================================================================
+            conv1_2 = conv_layer(images,
+                                channels_in=3,
+                                channels_out=24,
+                                filter_size=(5,5),
+                                strides=[1,1,1,1],
+                                name='conv1_0',
+                                is_training=self.is_training)
+            conv1_2 = tf.nn.relu(conv1_2)
+            conv1_2 = maxpool_layer(conv1_2,
+                                    kernel_size=[2,2],
+                                    strides=[1, 2, 2, 1],
+                                    name='maxpool_1')
+
+
+
+            conv2_2 = conv_layer(conv1_2,
+                                channels_in=24,
+                                channels_out=48,
+                                filter_size=(3,3),
+                                strides=[1,1,1,1],
+                                name='conv2_0',
+                                is_training=self.is_training)
+            conv2_2 = tf.nn.relu(conv2_2)
+            conv2_2 = maxpool_layer(conv2_2,
+                                    kernel_size=[2,2],
+                                    strides=[1, 2, 2, 1],
+                                    name='maxpool_1')
+
+
+            conv3_2 = conv_layer(conv2_2,
+                                channels_in=48,
+                                channels_out=24,
+                                filter_size=(3,3),
+                                strides=[1,1,1,1],
+                                name='conv3_0',
+                                is_training=self.is_training)
+            conv3_2 = tf.nn.relu(conv3_2)
+            conv4_2 = conv_layer(conv3_2,
+                                channels_in=24,
+                                channels_out=12,
+                                filter_size=(3,3),
+                                strides=[1,1,1,1],
+                                name='conv4_0',
+                                is_training=self.is_training)
+            conv4_2 = tf.nn.relu(conv4_2)
+
+
+            # fuse layer
+            # =================================================================
+            suma = tf.concat([conv4_0, conv4_1, conv4_2],axis = 3)
+
+            conv_final = conv_layer(suma,
+                                    channels_in=30,
+                                    channels_out=1,
+                                    filter_size=(1,1),
+                                    strides=[1,1,1,1],
+                                    name='conv5_0',
+                                    is_training=self.is_training)
+
+
+
+        with tf.name_scope('Logits_Transform'):
+            self.prediction = tf.nn.relu(conv_final)
+            tf.summary.image('density_pred', self.prediction, 1)
+
+    def loss(self):
+        with tf.name_scope('Loss'):
+            loss = tf.losses.mean_squared_error(self.prediction,
+                                                self.density)
+            tf.summary.scalar("mse_loss",loss)
             return loss
