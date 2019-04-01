@@ -23,7 +23,7 @@ class Pipeline:
         return image, label
 
     def load_data(self, img_dimension=(5,5),
-                  n_channels=3, target_dim = [None, 1]):
+                  n_channels=3, target_dim = [None, 1], type_target=tf.int32):
 
         self.x = tf.placeholder('float32',
                                  shape=[None,
@@ -33,7 +33,7 @@ class Pipeline:
 
                                  name='input_images')
 
-        self.y = tf.placeholder('int32',
+        self.y = tf.placeholder(type_target,
                                  shape=target_dim,
                                  name='counts_images')
 

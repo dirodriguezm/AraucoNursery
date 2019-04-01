@@ -49,7 +49,8 @@ if __name__ == "__main__":
     pip = Pipeline(save_path='./sessions/'+experiment_name+'/')
 
     pip.load_data(img_dimension=(dimensions[1],dimensions[2]),
-                  n_channels=dimensions[3], target_dim = [None, 25, 25, 1])
+                  n_channels=dimensions[3], target_dim = [None, 25, 25, 1],
+                  type_target='float32')
 
     pip.create_batches(batch_size)
 

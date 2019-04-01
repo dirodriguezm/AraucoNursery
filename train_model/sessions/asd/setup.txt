@@ -1,6 +1,0 @@
-Architecture: lstm
-number of channels: 3
-img dimensionality: (58, 63)
-Architecture: r3
-number of channels: 3
-img dimensionality: (58, 63)
