@@ -1,6 +1,7 @@
 import tensorflow as tf
 from layers import *
 
+
 class Regressor_3:
     def __init__(self,
                  images,
@@ -8,11 +9,20 @@ class Regressor_3:
                  lr = 1e-6):
 
         self.lr = lr
-        self.images = images
-        self.counts = counts
         # Probabilidad de prender una neurona
         self.keep_prob = tf.placeholder('float32', name='keep_prob')
         self.is_training = tf.placeholder(tf.bool, name="is_train");
+
+        images, counts = tf.cond(self.is_training,
+                                 lambda: self.image_rotation(images,
+                                                             counts,
+                                                             True),
+                                 lambda: self.image_rotation(images,
+                                                             counts,
+                                                             False))
+
+        tf.summary.image('image_rotated', images[0:2], 1)
+        self.counts = counts
 
         with tf.name_scope('ARCH_R1'):
             conv_0 = conv_layer(images,
@@ -52,7 +62,7 @@ class Regressor_3:
                                 name='conv_2',
                                 is_training=self.is_training)
 
-            # ==================================================================
+            # ========================self.images==========================================
 
             conv_3 = conv_layer(conv_2,
                                 channels_in=24,
@@ -62,7 +72,7 @@ class Regressor_3:
                                 name='conv_3',
                                 is_training=self.is_training)
 
-            # ==================================================================
+            # =======================        print(self.images)===========================================
 
             conv_4 = conv_layer(conv_3,
                                 channels_in=12,
@@ -84,11 +94,25 @@ class Regressor_3:
 
             fc_4    = tf.layers.dense(fc_3, 1)
 
-
         with tf.name_scope('Logits_Transform'):
-
             self.prediction = tf.nn.relu(fc_4,
                                           name='activated_output')
+
+    def image_rotation(self, images, counts, go):
+        if go:
+            images_180    = tf.image.rot90(images, k=2, name='rot_image')
+            images_fliped = tf.image.flip_left_right(images)
+            images_fliped2 = tf.image.flip_left_right(images_180)
+
+            new_images = tf.concat([images_180,
+                                    images_fliped,
+                                    images_fliped2,
+                                    images], axis=0)
+
+            new_counts = tf.concat([counts, counts, counts, counts], axis=0)
+            return new_images, new_counts
+        else:
+            return images, counts
 
 
     def loss(self):

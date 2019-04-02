@@ -49,6 +49,7 @@ class RestoreModel:
                 total_pred.append(y_pred)
         except:
             pass
+
         print('test loss: ',np.mean(loss))
         total_pred = np.concatenate(total_pred, axis=0)
 

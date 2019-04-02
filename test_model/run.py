@@ -4,7 +4,7 @@ import h5py
 
 
 if __name__ == "__main__":
-    model_path = './saved_model/popo/'
+    model_path = './saved_model/nueva/'
     dir_model = model_path+'train_set.h5'
 
     with h5py.File(dir_model, 'r') as hf:

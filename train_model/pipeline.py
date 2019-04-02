@@ -37,8 +37,8 @@ class Pipeline:
                                  shape=target_dim,
                                  name='counts_images')
 
-        self.img_dimens = img_dimension
-        self.n_channels = n_channels
+        self.img_dimens   = img_dimension
+        self.n_channels   = n_channels
 
         n_process = int(multiprocessing.cpu_count()/2)
         self.dataset_img = tf.data.Dataset.from_tensor_slices((self.x, self.y))
@@ -47,7 +47,7 @@ class Pipeline:
 
 
     def create_batches(self, batch_size=32):
-        batches = self.dataset_img.batch(batch_size)
+        batches = self.dataset_img.batch(batch_size, drop_remainder=True)
         batches = batches.prefetch(buffer_size=1)
 
         self.iterator = batches.make_initializable_iterator()
@@ -76,6 +76,7 @@ class Pipeline:
             self.model = CRNN(self.images,
                               self.target,
                               lr=0.003)
+
         if model_name == 'multicolumn':
             tf.summary.image('density_gt', self.target, 1)
             self.model = MCNN(images=self.images, density=self.target)

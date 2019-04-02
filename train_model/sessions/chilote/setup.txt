@@ -1,3 +1,0 @@
-Architecture: multicolumn
-number of channels: 3
-img dimensionality: (100, 100)
