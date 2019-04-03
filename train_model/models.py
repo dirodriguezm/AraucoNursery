@@ -505,5 +505,4 @@ class MCNN:
         with tf.name_scope('Loss'):
             loss = tf.losses.mean_squared_error(self.prediction,
                                                 self.density)
-            tf.summary.scalar("mse_loss",loss)
             return loss

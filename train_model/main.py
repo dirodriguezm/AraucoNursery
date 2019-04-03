@@ -9,32 +9,37 @@ import numpy as np
 os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[1]
 
 
+# python main.py 0 mcnn_color multicolumn 
+
 if __name__ == "__main__":
 
     # ===================================================
     experiment_name = sys.argv[2]
     model_used      = sys.argv[3]
-    n_epochs        = 1000
+    density         = sys.argv[4]
+    n_epochs        = 10000
     batch_size      = 64
     keep_prob       = 0.8
+
     # ===================================================
 
     with h5py.File('../images/data_mapa.h5', 'r') as hf:
-        images = hf['images'].value[0:100]
-        target = hf['density'].value[0:100]
+        images = hf['images'].value
+        target = hf['density'].value
 
-    densidades = []
-    for element in target:
-        den = element
-        den_quarter = np.zeros((int(den.shape[0] / 4), int(den.shape[1] / 4)))
+    if(density):
+        densidades = []
+        for element in target:
+            den = element
+            den_quarter = np.zeros((int(den.shape[0] / 4), int(den.shape[1] / 4)))
 
-        for i in range(den_quarter.shape[0]):
-            for j in range(den_quarter.shape[1]):
-                for p in range(4):
-                    for q in range(4):
-                        den_quarter[i][j] += den[i * 4 + p][j * 4 + q]
-        den_quarter = den_quarter[:,:,None]
-        densidades.append(den_quarter)
+            for i in range(den_quarter.shape[0]):
+                for j in range(den_quarter.shape[1]):
+                    for p in range(4):
+                        for q in range(4):
+                            den_quarter[i][j] += den[i * 4 + p][j * 4 + q]
+            den_quarter = den_quarter[:,:,None]
+            densidades.append(den_quarter)
 
     target = densidades
     dimensions = images.shape
