@@ -1,5 +1,6 @@
 import tensorflow as tf
 from layers import *
+from cost import *
 
 class Regressor_3:
     def __init__(self,

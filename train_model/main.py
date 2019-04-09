@@ -9,39 +9,39 @@ import numpy as np
 os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[1]
 
 
-# python main.py 0 mcnn_color multicolumn 
+# python main.py 0 mcnn_color multicolumn
 
 if __name__ == "__main__":
 
     # ===================================================
     experiment_name = sys.argv[2]
     model_used      = sys.argv[3]
-    density         = sys.argv[4]
     n_epochs        = 10000
-    batch_size      = 64
+    batch_size      = 1
     keep_prob       = 0.8
 
     # ===================================================
 
-    with h5py.File('../images/data_mapa.h5', 'r') as hf:
+    with h5py.File('./images/data_mapa.h5', 'r') as hf:
+        # print(hf.keys())
         images = hf['images'].value
-        target = hf['density'].value
+        target = hf['density_model'].value
 
-    if(density):
-        densidades = []
-        for element in target:
-            den = element
-            den_quarter = np.zeros((int(den.shape[0] / 4), int(den.shape[1] / 4)))
 
-            for i in range(den_quarter.shape[0]):
-                for j in range(den_quarter.shape[1]):
-                    for p in range(4):
-                        for q in range(4):
-                            den_quarter[i][j] += den[i * 4 + p][j * 4 + q]
-            den_quarter = den_quarter[:,:,None]
-            densidades.append(den_quarter)
+    # densidades = []
+    # for element in target:
+    #     den = element
+    #     den_quarter = np.zeros((int(den.shape[0] / 4), int(den.shape[1] / 4)))
 
-    target = densidades
+    #     for i in range(den_quarter.shape[0]):
+    #         for j in range(den_quarter.shape[1]):
+    #             for p in range(4):
+    #                 for q in range(4):
+    #                     den_quarter[i][j] += den[i * 4 + p][j * 4 + q]
+    #     den_quarter = den_quarter[:,:,None]
+    #     densidades.append(den_quarter)
+    target = target[:,:,:,None]
+    print(type(target[1]),target[1].shape,target[1].dtype)
     dimensions = images.shape
     x_train, x_rest, y_train, y_rest = train_test_split(
     images, target, test_size=0.4, random_state=42, shuffle=True)
@@ -62,6 +62,7 @@ if __name__ == "__main__":
 
     # pip.fit(x_train, y_train[:, None], x_val, y_val[:, None],
     #         n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)
+    print("fit")
     pip.fit(x_train, y_train, x_val, y_val,
             n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)
     pip.test(x_test, y_test[:,None])
