@@ -51,7 +51,7 @@ class Pipeline:
 
     def construct_model(self, model_name="r1", lr=1e-6):
         self.model_name = model_name
-        tf.summary.image("image", self.images,1)
+        tf.summary.image("image", self.images,max_outputs=3)
 
         with open(self.save_path + "/setup.txt", "a") as self.out:
             self.out.write("Architecture: " + str(model_name) + "\n")
@@ -67,7 +67,7 @@ class Pipeline:
         if model_name == "multicolumn":
             self.target=tf.cast(self.target,tf.float32)
             # print(self.target)
-            tf.summary.image("density_gt", self.target,1)
+            tf.summary.image("density_gt", self.target,max_outputs=3)
             self.model = MCNN(images=self.images, density=self.target)
 
         self.loss = self.model.loss()

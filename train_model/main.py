@@ -16,8 +16,8 @@ if __name__ == "__main__":
     # ===================================================
     experiment_name = sys.argv[2]
     model_used      = sys.argv[3]
-    n_epochs        = 10000
-    batch_size      = 1
+    n_epochs        = 2500
+    batch_size      = 32
     keep_prob       = 0.8
 
     # ===================================================
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     #     den_quarter = den_quarter[:,:,None]
     #     densidades.append(den_quarter)
     target = target[:,:,:,None]
-    print(type(target[1]),target[1].shape,target[1].dtype)
+#     print(type(target[1]),target[1].shape,target[1].dtype)
     dimensions = images.shape
     x_train, x_rest, y_train, y_rest = train_test_split(
     images, target, test_size=0.4, random_state=42, shuffle=True)
@@ -62,10 +62,10 @@ if __name__ == "__main__":
 
     # pip.fit(x_train, y_train[:, None], x_val, y_val[:, None],
     #         n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)
-    print("fit")
+
     pip.fit(x_train, y_train, x_val, y_val,
             n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)
-    pip.test(x_test, y_test[:,None])
+    pip.test(x_test, y_test)
 
     # =====================================================
 

@@ -330,11 +330,17 @@ class MCNN:
                  images,
                  density,
                  lr = 1e-4):
-        self.images = images
-        self.density = density
         self.lr = lr
         self.is_training = tf.placeholder(tf.bool,name="is_train")
         self.keep_prob = tf.placeholder('float32', name='keep_prob')
+
+        images, density = tf.cond(self.is_training,
+                                lambda: self.image_rotation(images,
+                                        density,True),
+                                 lambda: self.image_rotation(images,
+                                        density,False))
+        self.images = images
+        self.density = density
 
         with tf.name_scope("MultiColumn"):
 
@@ -501,6 +507,26 @@ class MCNN:
         with tf.name_scope('Logits_Transform'):
             self.prediction = tf.nn.relu(conv_final)
             tf.summary.image('density_pred', self.prediction, 1)
+
+    def image_rotation(self, images, density, go):
+        if go:
+            images_180    = tf.image.flip_up_down(images)
+            images_fliped = tf.image.flip_left_right(images)
+            images_fliped2 = tf.image.flip_left_right(images_180)
+
+            density_180    = tf.image.flip_up_down(density)
+            density_fliped = tf.image.flip_left_right(density)
+            density_fliped2 = tf.image.flip_left_right(density_180)
+
+            new_images = tf.concat([images_180,
+                                    images_fliped,
+                                    images_fliped2,
+                                    images], axis=0)
+
+            new_density = tf.concat([density_180, density_fliped, density_fliped2, density], axis=0)
+            return new_images, new_density
+        else:
+            return images, density
 
     def loss(self):
         with tf.name_scope('Loss'):
