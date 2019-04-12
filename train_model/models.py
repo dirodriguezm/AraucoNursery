@@ -329,18 +329,22 @@ class MCNN:
     def __init__(self,
                  images,
                  density,
+                 counts,
                  lr = 1e-4):
         self.lr = lr
         self.is_training = tf.placeholder(tf.bool,name="is_train")
         self.keep_prob = tf.placeholder('float32', name='keep_prob')
 
-        images, density = tf.cond(self.is_training,
+        self.counting = tf.placeholder(tf.bool,name="counting")
+
+        images, density,counts = tf.cond(self.is_training,
                                 lambda: self.image_rotation(images,
-                                        density,True),
+                                        density,counts,True),
                                  lambda: self.image_rotation(images,
-                                        density,False))
+                                        density,counts,False))
         self.images = images
         self.density = density
+        self.counts = counts
 
         with tf.name_scope("MultiColumn"):
 
@@ -508,7 +512,7 @@ class MCNN:
             self.prediction = tf.nn.relu(conv_final)
             tf.summary.image('density_pred', self.prediction, 1)
 
-    def image_rotation(self, images, density, go):
+    def image_rotation(self, images, density,counts, go):
         if go:
             images_180    = tf.image.flip_up_down(images)
             images_fliped = tf.image.flip_left_right(images)
@@ -524,12 +528,45 @@ class MCNN:
                                     images], axis=0)
 
             new_density = tf.concat([density_180, density_fliped, density_fliped2, density], axis=0)
-            return new_images, new_density
+            new_counts = tf.concat([counts, counts, counts, counts], axis=0)
+            return new_images, new_density,new_counts
         else:
             return images, density
+    
+    
+    def dice_coe(self,output, target, loss_type='jaccard', axis=(1, 2, 3), smooth=1e-5):
+        inse = tf.reduce_sum(output * target, axis=axis)
+        if loss_type == 'jaccard':
+            l = tf.reduce_sum(output * output, axis=axis)
+            r = tf.reduce_sum(target * target, axis=axis)
+        elif loss_type == 'sorensen':
+            l = tf.reduce_sum(output, axis=axis)
+            r = tf.reduce_sum(target, axis=axis)
+        else:
+            raise Exception("Unknow loss_type")
+
+        dice = (2. * inse + smooth) / (l + r + smooth)
+        ##
+        dice = tf.reduce_mean(dice, name='dice_coe')
+        return dice
+
 
     def loss(self):
         with tf.name_scope('Loss'):
+            #loss normal
+            # loss = tf.losses.mean_squared_error(self.prediction,self.density)
+            
+            #loss con suma
             loss = tf.losses.mean_squared_error(self.prediction,
-                                                self.density)
+                                                self.density) + tf.losses.mean_squared_error(tf.math.reduce_sum(self.predict),self.count)
+            
+            
+            #loss ponderado
+            # cte = 100
+            # loss = tf.losses.mean_squared_error(cte*self.prediction,
+            #                                     cte*self.density) 
+            
+            
+            # dice
+            # loss = self.dice_coe(self.prediction, self.density, loss_type='jaccard', axis=(1, 2), smooth=1e-5)
             return loss

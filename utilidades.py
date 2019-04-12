@@ -1,11 +1,10 @@
 import os
 import rasterio
 from osgeo import gdal, ogr, osr
-
-# import cv2
+import cv2
 import numpy as np
 import pandas as pd
-
+import matplotlib.pyplot as plt
 
 def get_gaussian_kernel(fs_x, fs_y, sigma):
     """
@@ -112,19 +111,24 @@ def get_coordenadas(raster, puntos, url_salida, nombre):
     :nombre: nombre del csv con los puntos
     :return: un array con los puntos de la forma y,x y un csv con los puntos
     """
+    erradas = 0
     coordenadas = []
     pixeles = pd.DataFrame(columns=["x", "y"])
     for index in range(puntos.shape[0]):
-        pl = raster.index(
-            puntos["geometry"][index].bounds[0], puntos["geometry"][index].bounds[1]
-        )
-        pixeles.loc[index] = [pl[0], pl[1]]
+        try:
+            pl = raster.index(puntos["geometry"][index].bounds[0], puntos["geometry"][index].bounds[1])
+            bandera = True
+        except:
+            print(index)
+        if(bandera):
+            pixeles.loc[index] = [pl[0], pl[1]]
+        
     pixeles.to_csv(url_salida + nombre + ".csv")
 
     for element in range(pixeles.shape[0]):
         coordenadas.append([pixeles["y"][element], pixeles["x"][element]])
 
-    return coordenadas, pixeles
+    return coordenadas, pixeles,erradas
 
 
 def array_to_shp(matriz, raster, outputh_file, raster_NoDataValue=0):
@@ -263,3 +267,58 @@ def reduccion_mapa(lista_mapa, x=4):
         den_quarter = den_quarter[:, :, None]
         densidades.append(den_quarter)
     return densidades
+
+def density_map_tiff(url_imagen,url_salida):
+    """
+    Dado un string del nombre del archivo que es un tiff, no entrega un mapa de densidad.
+    spatial-analyst->density->point density
+    :url_imagen: string donde se encuentra el mapa de densidad generado con el arcmap
+    :url_salida: lugar donde se almacenara el mapa de densidad extraido  
+    :return: array con el mapa de densidad extraido
+    """
+    from osgeo import gdal
+    ds = gdal.Open(url_imagen)
+    myarray = np.array(ds.GetRasterBand(1).ReadAsArray())
+    lista = myarray.ravel()
+    normalized = (lista-min(lista))/(max(lista)-min(lista))
+    density_map = np.reshape(normalized, myarray.shape)
+    density_map[np.isnan(density_map)] = 0
+    np.save(url_salida+"mapa_densidad.npy",density_map)
+    return density_map
+
+def vis_square(data):
+    """Take an array of shape (n, height, width) or (n, height, width, 3)
+       and visualize each (height, width) thing in a grid of size approx. sqrt(n) by sqrt(n)"""
+    
+    # normalize data for display
+    data = (data - data.min()) / (data.max() - data.min())
+    
+    # force the number of filters to be square
+    n = int(np.ceil(np.sqrt(data.shape[0])))
+    padding = (((0, n ** 2 - data.shape[0]),
+               (0, 1), (0, 1))                 # add some space between filters
+               + ((0, 0),) * (data.ndim - 3))  # don't pad the last dimension (if there is one)
+    data = np.pad(data, padding, mode='constant', constant_values=1)  # pad with ones (white)
+    
+    # tile the filters into an image
+    data = data.reshape((n, n) + data.shape[1:]).transpose((0, 2, 1, 3) + tuple(range(4, data.ndim + 1)))
+    data = data.reshape((n * data.shape[1], n * data.shape[3]) + data.shape[4:])
+    
+    plt.figure(figsize=(30,30))
+    plt.imshow(data)
+    plt.axis('off')
+    
+def list_to_np_array(in_list):
+    max_h = 0
+    max_w = 0
+    for i, item in enumerate(in_list):
+        if item.shape[0] > max_h:
+            max_h = item.shape[0]
+        if item.shape[1] > max_w:
+            max_w = item.shape[1]
+    out_arr = np.zeros((len(in_list), max_h, max_w, 3))
+    for i, item in enumerate(in_list):
+        pad_h = max_h - item.shape[0]
+        pad_w = max_w - item.shape[1]
+        out_arr[i] = np.pad(item, ((0,pad_h),(0,pad_w),(0,0)), mode='constant', constant_values=0.)
+    return out_arr

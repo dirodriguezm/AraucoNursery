@@ -98,3 +98,4 @@ def fc_layer(input, size_in, size_out, name='fc'):
         out = tf.nn.xw_plus_b(input, W, B)
 
         return out
+

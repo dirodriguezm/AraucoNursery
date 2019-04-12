@@ -16,13 +16,15 @@ class Pipeline:
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
 
-    def load_image(self, image, label):
+    def load_image(self, image, gt,label):
         image = tf.image.convert_image_dtype(image, tf.float32)
         image = tf.image.resize_images(image, [self.img_dimens[0], self.img_dimens[1]])
         image = tf.image.per_image_standardization(image)
-        return image, label
 
-    def load_data(self, img_dimension=(5, 5), n_channels=3, target_dim=[None, 1]):
+        gt = tf.image.convert_image_dtype(gt, tf.float32)
+        return image, gt,label
+
+    def load_data(self, img_dimension=(5, 5), n_channels=3, target_dim=[None, 1],count):
 
         self.x = tf.placeholder(
             "float32",
@@ -30,13 +32,14 @@ class Pipeline:
             name="input_images",
         )
 
-        self.y = tf.placeholder("int32", shape=target_dim, name="counts_images")
+        self.y = tf.placeholder("float32", shape=target_dim, name="target_images")
+        self.z = tf.placeholder("int32", shape=[None, 1], name="counts_images")
 
         self.img_dimens = img_dimension
         self.n_channels = n_channels
 
         n_process = int(multiprocessing.cpu_count() / 2)
-        self.dataset_img = tf.data.Dataset.from_tensor_slices((self.x, self.y))
+        self.dataset_img = tf.data.Dataset.from_tensor_slices((self.x, self.y,self.z))
         self.dataset_img = self.dataset_img.map(
             self.load_image, num_parallel_calls=n_process
         )
@@ -47,7 +50,7 @@ class Pipeline:
 
         self.iterator = batches.make_initializable_iterator()
 
-        self.images, self.target = self.iterator.get_next()
+        self.images, self.target, self.counts = self.iterator.get_next()
 
     def construct_model(self, model_name="r1", lr=1e-6):
         self.model_name = model_name
@@ -65,7 +68,7 @@ class Pipeline:
         if model_name == "lstm":
             self.model = CRNN(self.images, self.target, lr=0.003)
         if model_name == "multicolumn":
-            self.target=tf.cast(self.target,tf.float32)
+            # self.target=tf.cast(self.target,tf.float32)
             # print(self.target)
             tf.summary.image("density_gt", self.target,max_outputs=3)
             self.model = MCNN(images=self.images, density=self.target)
