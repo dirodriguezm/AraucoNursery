@@ -338,10 +338,8 @@ class MCNN:
         self.counting = tf.placeholder(tf.bool,name="counting")
 
         images, density,counts = tf.cond(self.is_training,
-                                lambda: self.image_rotation(images,
-                                        density,counts,True),
-                                 lambda: self.image_rotation(images,
-                                        density,counts,False))
+                                lambda: self.image_rotation(images,density,counts,True),
+                                lambda: self.image_rotation(images,density,counts,False))
         self.images = images
         self.density = density
         self.counts = counts
@@ -513,7 +511,9 @@ class MCNN:
             tf.summary.image('density_pred', self.prediction, 1)
 
     def image_rotation(self, images, density,counts, go):
+        
         if go:
+            print("rotando imagenes")
             images_180    = tf.image.flip_up_down(images)
             images_fliped = tf.image.flip_left_right(images)
             images_fliped2 = tf.image.flip_left_right(images_180)
@@ -531,8 +531,7 @@ class MCNN:
             new_counts = tf.concat([counts, counts, counts, counts], axis=0)
             return new_images, new_density,new_counts
         else:
-            return images, density
-    
+            return images, density,counts
     
     def dice_coe(self,output, target, loss_type='jaccard', axis=(1, 2, 3), smooth=1e-5):
         inse = tf.reduce_sum(output * target, axis=axis)
@@ -557,8 +556,10 @@ class MCNN:
             # loss = tf.losses.mean_squared_error(self.prediction,self.density)
             
             #loss con suma
+            suma = tf.math.reduce_sum(self.prediction)
+            suma =tf.reshape(suma,[-1,1])
             loss = tf.losses.mean_squared_error(self.prediction,
-                                                self.density) + tf.losses.mean_squared_error(tf.math.reduce_sum(self.predict),self.count)
+                                                self.density) + tf.losses.mean_squared_error(suma,self.counts)
             
             
             #loss ponderado

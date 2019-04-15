@@ -9,15 +9,16 @@ import numpy as np
 os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[1]
 
 
-# python main.py 0 mcnn_color multicolumn
+# python main.py 0 mcnn_color multicolumn 1
 
 if __name__ == "__main__":
 
     # ===================================================
     experiment_name = sys.argv[2]
     model_used      = sys.argv[3]
+    count           = sys.argv[4]
     n_epochs        = 2500
-    batch_size      = 32
+    batch_size      = 2
     keep_prob       = 0.8
 
     # ===================================================
@@ -26,31 +27,38 @@ if __name__ == "__main__":
         # print(hf.keys())
         images = hf['images'].value
         target = hf['density_model'].value
+        if(count):
+             counts = hf['counts'].value
 
 
-    # densidades = []
-    # for element in target:
-    #     den = element
-    #     den_quarter = np.zeros((int(den.shape[0] / 4), int(den.shape[1] / 4)))
-
-    #     for i in range(den_quarter.shape[0]):
-    #         for j in range(den_quarter.shape[1]):
-    #             for p in range(4):
-    #                 for q in range(4):
-    #                     den_quarter[i][j] += den[i * 4 + p][j * 4 + q]
-    #     den_quarter = den_quarter[:,:,None]
-    #     densidades.append(den_quarter)
     target = target[:,:,:,None]
+    counts = counts[:, None]
+
+    print(images.shape,target.shape,counts.shape)
+
 #     print(type(target[1]),target[1].shape,target[1].dtype)
     dimensions = images.shape
+
+
     x_train, x_rest, y_train, y_rest = train_test_split(
     images, target, test_size=0.4, random_state=42, shuffle=True)
 
     x_val, x_test, y_val, y_test = train_test_split(
     x_rest, y_rest, test_size=0.4, random_state=42, shuffle=True)
 
-    # ====================================================
+#     print(counts.shape)
+#     print(counts[0])
+# #     counts.astype('int32')
+#     print(counts[0].dtype)
+    if(count):
+          x_train, x_rest, y_train, y_rest,z_train,z_rest = train_test_split(images, target,counts, 
+          test_size=0.4, random_state=42, shuffle=True)
 
+          x_val, x_test, y_val, y_test,z_val,z_test = train_test_split(
+    x_rest, y_rest,z_rest, test_size=0.4, random_state=42, shuffle=True)
+
+    # ====================================================
+    print("entrando a pipeline")
     pip = Pipeline(save_path='./sessions/'+experiment_name+'/')
 
     pip.load_data(img_dimension=(dimensions[1],dimensions[2]),
@@ -63,7 +71,7 @@ if __name__ == "__main__":
     # pip.fit(x_train, y_train[:, None], x_val, y_val[:, None],
     #         n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)
 
-    pip.fit(x_train, y_train, x_val, y_val,
+    pip.fit(x_train, y_train,z_train, x_val, y_val,z_val,
             n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)
     pip.test(x_test, y_test)
 
