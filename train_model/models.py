@@ -553,10 +553,21 @@ class MCNN:
     def loss(self):
         
   # L2 Loss
+<<<<<<< HEAD
+=======
+    
+>>>>>>> f120005efffb9eef81628c1e1eeb58fd37f29c30
         predict = tf.squeeze(self.prediction, 3)
         loss = tf.reduce_sum((self.prediction - self.density) * (self.prediction - self.density))
 
 
+<<<<<<< HEAD
+=======
+
+
+
+
+>>>>>>> f120005efffb9eef81628c1e1eeb58fd37f29c30
         #loss normal
         # loss = tf.losses.mean_squared_error(self.prediction,self.density)
         

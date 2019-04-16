@@ -68,9 +68,11 @@ class Pipeline:
         if model_name == "multicolumn":
             # self.target=tf.cast(self.target,tf.float32)
             # print(self.target)
-            tf.summary.image("density_gt", self.target,max_outputs=3)
+            tf.summary.image("density_gt", self.target,1)
             self.model = MCNN(images=self.images, density=self.target,counts=self.counts)
 
+    # pip.fit(x_train, y_train[:, None], x_val, y_val[:, None],
+    #         n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)
         self.loss = self.model.loss()
 
         tf.summary.scalar("loss", self.loss)
@@ -105,16 +107,17 @@ class Pipeline:
         self.sess.run(
             self.iterator.initializer, feed_dict={self.x: x_train, self.y: y_train,self.z:z_train}
         )
-
+        
         try:
             while True:
                 train_loss, _, _, _, sm = self.sess.run(
-                    [
+                    [   
                         self.loss,
                         self.images,
                         self.target,
                         self.train_step,
                         self.summaries,
+
                     ],
                     feed_dict={
                         self.model.keep_prob: keep_prob,
@@ -131,12 +134,12 @@ class Pipeline:
 
         return np.mean(epoch_train_loss)
 
-    def validation(self, x_val, y_val):
+    def validation(self, x_val, y_val,z_val):
 
         epoch_val_loss = []
 
         self.sess.run(
-            self.iterator.initializer, feed_dict={self.x: x_val, self.y: y_val}
+            self.iterator.initializer, feed_dict={self.x: x_val, self.y: y_val,self.z:z_val}
         )
         try:
             while True:
@@ -197,7 +200,6 @@ class Pipeline:
         for epoch in range(n_epochs):
             # print(epoch)
             train_loss = self.train(x_train, y_train,z_train, keep_prob)
-
             if epoch % 2 == 0:
                 val_loss = self.validation(x_val, y_val,z_val)
                 print("Epoch: {0} Train Loss: {1} Val Loss: {2}".format(epoch, train_loss, val_loss))
