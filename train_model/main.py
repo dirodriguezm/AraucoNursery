@@ -24,9 +24,9 @@ if __name__ == "__main__":
     # ===================================================
 
     with h5py.File('./images/data_mapa.h5', 'r') as hf:
-        # print(hf.keys())
+        print(hf.keys())
         images = hf['images'].value
-        target = hf['density_model'].value
+        target = hf['reduced_density'].value
         if(count):
              counts = hf['counts'].value
 
@@ -46,10 +46,7 @@ if __name__ == "__main__":
     x_val, x_test, y_val, y_test = train_test_split(
     x_rest, y_rest, test_size=0.4, random_state=42, shuffle=True)
 
-#     print(counts.shape)
-#     print(counts[0])
-# #     counts.astype('int32')
-#     print(counts[0].dtype)
+
     if(count):
           x_train, x_rest, y_train, y_rest,z_train,z_rest = train_test_split(images, target,counts, 
           test_size=0.4, random_state=42, shuffle=True)
@@ -67,9 +64,6 @@ if __name__ == "__main__":
     pip.create_batches(batch_size)
 
     pip.construct_model(model_name=model_used)
-
-    # pip.fit(x_train, y_train[:, None], x_val, y_val[:, None],
-    #         n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)
 
     pip.fit(x_train, y_train,z_train, x_val, y_val,z_val,
             n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)

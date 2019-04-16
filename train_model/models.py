@@ -506,7 +506,7 @@ class MCNN:
 
 
 
-        with tf.name_scope('Logits_Transform'):
+        with tf.name_scope('prediction'):
             self.prediction = tf.nn.relu(conv_final)
             tf.summary.image('density_pred', self.prediction, 1)
 
@@ -551,23 +551,34 @@ class MCNN:
 
 
     def loss(self):
-        with tf.name_scope('Loss'):
-            #loss normal
-            # loss = tf.losses.mean_squared_error(self.prediction,self.density)
-            
-            #loss con suma
-            suma = tf.math.reduce_sum(self.prediction)
-            suma =tf.reshape(suma,[-1,1])
-            loss = tf.losses.mean_squared_error(self.prediction,
-                                                self.density) + tf.losses.mean_squared_error(suma,self.counts)
-            
-            
-            #loss ponderado
-            # cte = 100
-            # loss = tf.losses.mean_squared_error(cte*self.prediction,
-            #                                     cte*self.density) 
-            
-            
-            # dice
-            # loss = self.dice_coe(self.prediction, self.density, loss_type='jaccard', axis=(1, 2), smooth=1e-5)
-            return loss
+        
+  # L2 Loss
+    
+        predict = tf.squeeze(self.prediction, 3)
+        loss = tf.reduce_sum((self.prediction - self.density) * (self.prediction - self.density))
+
+
+
+
+
+
+        #loss normal
+        # loss = tf.losses.mean_squared_error(self.prediction,self.density)
+        
+        #loss con suma
+        
+        # suma = tf.math.reduce_sum(self.prediction)
+        # suma =tf.reshape(suma,[-1,1])
+        # loss = tf.losses.mean_squared_error(self.prediction,
+        #                                     self.density) + tf.losses.mean_squared_error(suma,self.counts)
+        
+        
+        #loss ponderado
+        # cte = 100
+        # loss = tf.losses.mean_squared_error(cte*self.prediction,
+        #                                     cte*self.density) 
+        
+        
+        # dice
+        # loss = self.dice_coe(self.prediction, self.density, loss_type='jaccard', axis=(1, 2), smooth=1e-5)
+        return loss
