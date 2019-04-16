@@ -9,7 +9,7 @@ import numpy as np
 os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[1]
 
 
-# python main.py 0 mcnn_color multicolumn 1
+# python main.py 0 mcnn_color_9_7 multicolumn 1
 
 if __name__ == "__main__":
 
@@ -24,9 +24,9 @@ if __name__ == "__main__":
     # ===================================================
 
     with h5py.File('./images/data_mapa.h5', 'r') as hf:
-        # print(hf.keys())
+        print(hf.keys())
         images = hf['images'].value
-        target = hf['density_model'].value
+        target = hf['reduced_density'].value
         if(count):
              counts = hf['counts'].value
 
@@ -46,10 +46,7 @@ if __name__ == "__main__":
     x_val, x_test, y_val, y_test = train_test_split(
     x_rest, y_rest, test_size=0.4, random_state=42, shuffle=True)
 
-#     print(counts.shape)
-#     print(counts[0])
-# #     counts.astype('int32')
-#     print(counts[0].dtype)
+
     if(count):
           x_train, x_rest, y_train, y_rest,z_train,z_rest = train_test_split(images, target,counts, 
           test_size=0.4, random_state=42, shuffle=True)
@@ -57,25 +54,8 @@ if __name__ == "__main__":
           x_val, x_test, y_val, y_test,z_val,z_test = train_test_split(
     x_rest, y_rest,z_rest, test_size=0.4, random_state=42, shuffle=True)
 
+
     # ====================================================
-    print("entrando a pipeline")
-    pip = Pipeline(save_path='./sessions/'+experiment_name+'/')
-
-    pip.load_data(img_dimension=(dimensions[1],dimensions[2]),
-                  n_channels=dimensions[3], target_dim = [None, 25, 25, 1])
-
-    pip.create_batches(batch_size)
-
-    pip.construct_model(model_name=model_used)
-
-    # pip.fit(x_train, y_train[:, None], x_val, y_val[:, None],
-    #         n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)
-
-    pip.fit(x_train, y_train,z_train, x_val, y_val,z_val,
-            n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)
-    pip.test(x_test, y_test)
-
-    # =====================================================
 
     with h5py.File('./sessions/'+experiment_name+'/'+'train_set.h5', 'w') as hf:
          hf.create_dataset("images",  data=x_train)
@@ -88,3 +68,21 @@ if __name__ == "__main__":
     with h5py.File('./sessions/'+experiment_name+'/'+'test_set.h5', 'w') as hf:
          hf.create_dataset("images",  data=x_test)
          hf.create_dataset("counts",  data=y_test)
+
+
+    # =====================================================
+
+
+    print("entrando a pipeline")
+    pip = Pipeline(save_path='./sessions/'+experiment_name+'/')
+
+    pip.load_data(img_dimension=(dimensions[1],dimensions[2]),
+                  n_channels=dimensions[3], target_dim = [None, 25, 25, 1])
+
+    pip.create_batches(batch_size)
+
+    pip.construct_model(model_name=model_used)
+
+    pip.fit(x_train, y_train,z_train, x_val, y_val,z_val,
+            n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)
+    pip.test(x_test, y_test)

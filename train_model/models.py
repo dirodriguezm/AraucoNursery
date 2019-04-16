@@ -1,6 +1,6 @@
 import tensorflow as tf
 from layers import *
-from cost import *
+
 
 class Regressor_3:
     def __init__(self,
@@ -330,7 +330,7 @@ class MCNN:
                  images,
                  density,
                  counts,
-                 lr = 1e-4):
+                 lr = 1e-6):
         self.lr = lr
         self.is_training = tf.placeholder(tf.bool,name="is_train")
         self.keep_prob = tf.placeholder('float32', name='keep_prob')
@@ -348,51 +348,51 @@ class MCNN:
 
             #9x9 layers
             # =================================================================
-            conv1_0 = conv_layer(images,
-                                channels_in=3,
-                                channels_out=16,
-                                filter_size=(9,9),
-                                strides=[1,1,1,1],
-                                name='conv1_0',
-                                is_training=self.is_training)
-            conv1_0 = tf.nn.relu(conv1_0)
-            conv1_0 = maxpool_layer(conv1_0,
-                                    kernel_size=[2,2],
-                                    strides=[1, 2, 2, 1],
-                                    name='maxpool_1')
+            # conv1_0 = conv_layer(images,
+            #                     channels_in=3,
+            #                     channels_out=16,
+            #                     filter_size=(9,9),
+            #                     strides=[1,1,1,1],
+            #                     name='conv1_0',
+            #                     is_training=self.is_training)
+            # conv1_0 = tf.nn.relu(conv1_0)
+            # conv1_0 = maxpool_layer(conv1_0,
+            #                         kernel_size=[2,2],
+            #                         strides=[1, 2, 2, 1],
+            #                         name='maxpool_1')
 
 
 
-            conv2_0 = conv_layer(conv1_0,
-                                 channels_in=16,
-                                 channels_out=32,
-                                 filter_size=(7,7),
-                                 strides=[1,1,1,1],
-                                 name='conv2_0',
-                                 is_training=self.is_training)
-            conv2_0 = tf.nn.relu(conv2_0)
-            conv2_0 = maxpool_layer(conv2_0,
-                                    kernel_size=[2,2],
-                                    strides=[1, 2, 2, 1],
-                                    name='maxpool_1')
+            # conv2_0 = conv_layer(conv1_0,
+            #                      channels_in=16,
+            #                      channels_out=32,
+            #                      filter_size=(7,7),
+            #                      strides=[1,1,1,1],
+            #                      name='conv2_0',
+            #                      is_training=self.is_training)
+            # conv2_0 = tf.nn.relu(conv2_0)
+            # conv2_0 = maxpool_layer(conv2_0,
+            #                         kernel_size=[2,2],
+            #                         strides=[1, 2, 2, 1],
+            #                         name='maxpool_1')
 
 
-            conv3_0 = conv_layer(conv2_0,
-                                channels_in=32,
-                                channels_out=16,
-                                filter_size=(7,7),
-                                strides=[1,1,1,1],
-                                name='conv3_0',
-                                is_training=self.is_training)
-            conv3_0 = tf.nn.relu(conv3_0)
-            conv4_0 = conv_layer(conv3_0,
-                                channels_in=16,
-                                channels_out=8,
-                                filter_size=(7,7),
-                                strides=[1,1,1,1],
-                                name='conv4_0',
-                                is_training=self.is_training)
-            conv4_0 = tf.nn.relu(conv4_0)
+            # conv3_0 = conv_layer(conv2_0,
+            #                     channels_in=32,
+            #                     channels_out=16,
+            #                     filter_size=(7,7),
+            #                     strides=[1,1,1,1],
+            #                     name='conv3_0',
+            #                     is_training=self.is_training)
+            # conv3_0 = tf.nn.relu(conv3_0)
+            # conv4_0 = conv_layer(conv3_0,
+            #                     channels_in=16,
+            #                     channels_out=8,
+            #                     filter_size=(7,7),
+            #                     strides=[1,1,1,1],
+            #                     name='conv4_0',
+            #                     is_training=self.is_training)
+            # conv4_0 = tf.nn.relu(conv4_0)
 
 
             # 7x7 layer
@@ -494,7 +494,7 @@ class MCNN:
 
             # fuse layer
             # =================================================================
-            suma = tf.concat([conv4_0, conv4_1, conv4_2],axis = 3)
+            suma = tf.concat([conv4_1, conv4_2],axis = 3)
 
             conv_final = conv_layer(suma,
                                     channels_in=30,
@@ -506,7 +506,7 @@ class MCNN:
 
 
 
-        with tf.name_scope('Logits_Transform'):
+        with tf.name_scope('prediction'):
             self.prediction = tf.nn.relu(conv_final)
             tf.summary.image('density_pred', self.prediction, 1)
 
@@ -551,23 +551,29 @@ class MCNN:
 
 
     def loss(self):
-        with tf.name_scope('Loss'):
-            #loss normal
-            # loss = tf.losses.mean_squared_error(self.prediction,self.density)
-            
-            #loss con suma
-            suma = tf.math.reduce_sum(self.prediction)
-            suma =tf.reshape(suma,[-1,1])
-            loss = tf.losses.mean_squared_error(self.prediction,
-                                                self.density) + tf.losses.mean_squared_error(suma,self.counts)
-            
-            
-            #loss ponderado
-            # cte = 100
-            # loss = tf.losses.mean_squared_error(cte*self.prediction,
-            #                                     cte*self.density) 
-            
-            
-            # dice
-            # loss = self.dice_coe(self.prediction, self.density, loss_type='jaccard', axis=(1, 2), smooth=1e-5)
-            return loss
+        
+  # L2 Loss
+        predict = tf.squeeze(self.prediction, 3)
+        loss = tf.reduce_sum((self.prediction - self.density) * (self.prediction - self.density))
+
+
+        #loss normal
+        # loss = tf.losses.mean_squared_error(self.prediction,self.density)
+        
+        #loss con suma
+        
+        # suma = tf.math.reduce_sum(self.prediction)
+        # suma =tf.reshape(suma,[-1,1])
+        # loss = tf.losses.mean_squared_error(self.prediction,
+        #                                     self.density) + tf.losses.mean_squared_error(suma,self.counts)
+        
+        
+        #loss ponderado
+        # cte = 100
+        # loss = tf.losses.mean_squared_error(cte*self.prediction,
+        #                                     cte*self.density) 
+        
+        
+        # dice
+        # loss = self.dice_coe(self.prediction, self.density, loss_type='jaccard', axis=(1, 2), smooth=1e-5)
+        return loss
