@@ -9,7 +9,7 @@ import numpy as np
 os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[1]
 
 
-# python main.py 0 mcnn_color_9_7 multicolumn 1
+# python main.py 0 mcnn_color multicolumn 1
 
 if __name__ == "__main__":
 
@@ -54,8 +54,9 @@ if __name__ == "__main__":
           x_val, x_test, y_val, y_test,z_val,z_test = train_test_split(
     x_rest, y_rest,z_rest, test_size=0.4, random_state=42, shuffle=True)
 
-
     # ====================================================
+    print("entrando a pipeline")
+    pip = Pipeline(save_path='./sessions/'+experiment_name+'/')
 
     with h5py.File('./sessions/'+experiment_name+'/'+'train_set.h5', 'w') as hf:
          hf.create_dataset("images",  data=x_train)
@@ -69,13 +70,7 @@ if __name__ == "__main__":
          hf.create_dataset("images",  data=x_test)
          hf.create_dataset("counts",  data=y_test)
 
-
     # =====================================================
-
-
-    print("entrando a pipeline")
-    pip = Pipeline(save_path='./sessions/'+experiment_name+'/')
-
     pip.load_data(img_dimension=(dimensions[1],dimensions[2]),
                   n_channels=dimensions[3], target_dim = [None, 25, 25, 1])
 
@@ -86,3 +81,5 @@ if __name__ == "__main__":
     pip.fit(x_train, y_train,z_train, x_val, y_val,z_val,
             n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)
     pip.test(x_test, y_test)
+
+    

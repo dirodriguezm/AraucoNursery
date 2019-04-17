@@ -1,6 +1,6 @@
 import tensorflow as tf
 from layers import conv_layer, maxpool_layer
-from models import Regressor_3, AlexNet, CRNN, MCNN
+from models import Regressor_3, MCNN,CCNN
 import numpy as np
 import os
 import multiprocessing
@@ -52,7 +52,7 @@ class Pipeline:
 
     def construct_model(self, model_name="r1", lr=1e-6):
         self.model_name = model_name
-        tf.summary.image("image", self.images,1)
+        # tf.summary.image("image", self.images,1)
 
         with open(self.save_path + "/setup.txt", "a") as self.out:
             self.out.write("Architecture: " + str(model_name) + "\n")
@@ -66,17 +66,22 @@ class Pipeline:
         if model_name == "lstm":
             self.model = CRNN(self.images, self.target, lr=0.003)
         if model_name == "multicolumn":
-            # self.target=tf.cast(self.target,tf.float32)
-            # print(self.target)
-            tf.summary.image("density_gt", self.target,1)
+            
             self.model = MCNN(images=self.images, density=self.target,counts=self.counts)
+            self.predict_count,self.gt_count = self.model.get_count()
+        if model_name == "ccnn":
+            self.model = CCNN(images=self.images, density=self.target,counts=self.counts)
+            self.predict_count,self.gt_count = self.model.get_count()
+            
 
-    # pip.fit(x_train, y_train[:, None], x_val, y_val[:, None],
-    #         n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)
+        if model_name == "hydracnn":
+            pass
+
         self.loss = self.model.loss()
+       
 
         tf.summary.scalar("loss", self.loss)
-        # tf.summary.scalar("Learning Rate", self.lr)
+
 
         with tf.name_scope("train"):
             self.train_step = tf.train.AdamOptimizer(lr).minimize(self.loss)
@@ -88,6 +93,7 @@ class Pipeline:
 
         tf.add_to_collection(name="placeholder", value=self.x)
         tf.add_to_collection(name="placeholder", value=self.y)
+        tf.add_to_collection(name="placeholder", value=self.z)
         tf.add_to_collection(name="placeholder", value=self.images)
         tf.add_to_collection(name="placeholder", value=self.target)
         tf.add_to_collection(name="placeholder", value=self.model.keep_prob)
@@ -110,13 +116,14 @@ class Pipeline:
         
         try:
             while True:
-                train_loss, _, _, _, sm = self.sess.run(
+                train_loss, _, _, _, sm= self.sess.run(
                     [   
                         self.loss,
                         self.images,
                         self.target,
                         self.train_step,
                         self.summaries,
+                       
 
                     ],
                     feed_dict={
@@ -201,8 +208,8 @@ class Pipeline:
             # print(epoch)
             train_loss = self.train(x_train, y_train,z_train, keep_prob)
             if epoch % 2 == 0:
-                val_loss = self.validation(x_val, y_val,z_val)
-                print("Epoch: {0} Train Loss: {1} Val Loss: {2}".format(epoch, train_loss, val_loss))
+                val_loss  = self.validation(x_val, y_val,z_val)
+                print("Epoch: {0} Train Loss: {1} Val Loss: {2}  ".format(epoch, train_loss, val_loss))
                 if val_loss < best_loss:
                     best_loss = val_loss
                     nochanges = 0
