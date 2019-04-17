@@ -333,6 +333,7 @@ class MCNN:
             tf.summary.image('density_pred', self.prediction, 1)
         with tf.name_scope("INPUT"):
             tf.summary.image("image", self.images,1)
+        with tf.name_scope("density_gt"):
             tf.summary.image("density", self.density,1)
 
 
@@ -475,6 +476,54 @@ class CCNN:
 
         with tf.name_scope("INPUT"):
             tf.summary.image("image", self.images,1)
+        with tf.name_scope("density_gt"):
+            tf.summary.image("density", self.density,1)
+
+    def get_count(self):
+        suma_p = tf.reduce_sum(self.prediction) 
+        suma_d = tf.reduce_sum(self.density)
+        return suma_p,suma_d
+
+    def loss(self):
+        # L2 Loss
+        loss = tf.reduce_sum((self.prediction - self.density) * (self.prediction - self.density))
+        return loss
+        
+
+class HYDRACNN:
+    def __init__(self,
+                 images,
+                 density,
+                 counts,
+                 lr = 1e-8):
+        self.lr = lr
+        self.is_training = tf.placeholder(tf.bool,name="is_train")
+        self.keep_prob = tf.placeholder('float32', name='keep_prob')
+
+        self.counting = tf.placeholder(tf.bool,name="counting")
+
+        images, density,counts = tf.cond(self.is_training,
+                                lambda: image_rotation(images,density,counts,True),
+                                lambda: image_rotation(images,density,counts,False))
+                                
+        self.images = images
+        self.density = density
+        self.counts = counts
+
+
+        with tf.name_scope("HYDRA"):
+            pass
+
+           
+        with tf.name_scope('prediction'):
+            #salida
+            self.prediction = 
+            tf.summary.image('density_pred', self.prediction, 1)
+            
+
+        with tf.name_scope("INPUT"):
+            tf.summary.image("image", self.images,1)
+        with tf.name_scope("density_gt"):
             tf.summary.image("density", self.density,1)
 
     def get_count(self):

@@ -18,7 +18,7 @@ if __name__ == "__main__":
     model_used      = sys.argv[3]
     count           = sys.argv[4]
     n_epochs        = 2500
-    batch_size      = 2
+    batch_size      = 32
     keep_prob       = 0.8
 
     # ===================================================
@@ -33,10 +33,6 @@ if __name__ == "__main__":
 
     target = target[:,:,:,None]
     counts = counts[:, None]
-
-    print(images.shape,target.shape,counts.shape)
-
-#     print(type(target[1]),target[1].shape,target[1].dtype)
     dimensions = images.shape
 
 
