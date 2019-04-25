@@ -9,7 +9,8 @@ import numpy as np
 os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[1]
 
 
-# python main.py 0 mcnn_color multicolumn 1
+# python main.py 0 mcnn_dron multicolumn 1
+# python main.py 0 ccnn_1 ccnn 1
 
 if __name__ == "__main__":
 
@@ -17,8 +18,8 @@ if __name__ == "__main__":
     experiment_name = sys.argv[2]
     model_used      = sys.argv[3]
     count           = sys.argv[4]
-    n_epochs        = 2500
-    batch_size      = 32
+    n_epochs        = 4000
+    batch_size      = 1
     keep_prob       = 0.8
 
     # ===================================================
@@ -68,7 +69,7 @@ if __name__ == "__main__":
 
     # =====================================================
     pip.load_data(img_dimension=(dimensions[1],dimensions[2]),
-                  n_channels=dimensions[3], target_dim = [None, 25, 25, 1])
+                  n_channels=dimensions[3], target_dim = [None, target[0].shape[0], target[0].shape[1], 1])
 
     pip.create_batches(batch_size)
 
@@ -76,6 +77,6 @@ if __name__ == "__main__":
 
     pip.fit(x_train, y_train,z_train, x_val, y_val,z_val,
             n_epochs=n_epochs, stop_step=100000, keep_prob=keep_prob)
-    pip.test(x_test, y_test)
+    pip.test(x_test, y_test,z_test)
 
     

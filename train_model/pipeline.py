@@ -50,7 +50,7 @@ class Pipeline:
 
         self.images, self.target, self.counts = self.iterator.get_next()
 
-    def construct_model(self, model_name="r1", lr=1e-6):
+    def construct_model(self, model_name="r1", lr=1e-4):
         self.model_name = model_name
         # tf.summary.image("image", self.images,1)
 
@@ -60,16 +60,12 @@ class Pipeline:
             self.out.write("img dimensionality: " + str(self.img_dimens) + "\n")
 
         if model_name == "r3":
-            self.model = Regressor_3(self.images, self.target, lr=lr)
-        if model_name == "alexnet":
-            self.model = AlexNet(self.images, self.target, lr=0.003)
-        if model_name == "lstm":
-            self.model = CRNN(self.images, self.target, lr=0.003)
+            self.model = Regressor_3(self.images, self.target,self.counts)
         if model_name == "multicolumn":
-            
             self.model = MCNN(images=self.images, density=self.target,counts=self.counts)
             self.predict_count,self.gt_count = self.model.get_count()
         if model_name == "ccnn":
+            print("ccnn")
             self.model = CCNN(images=self.images, density=self.target,counts=self.counts)
             self.predict_count,self.gt_count = self.model.get_count()
             
@@ -84,12 +80,12 @@ class Pipeline:
 
 
         with tf.name_scope("train"):
-            self.train_step = tf.train.AdamOptimizer(lr).minimize(self.loss)
+            # self.train_step = tf.train.AdamOptimizer(lr).minimize(self.loss)
+            self.train_step = tf.train.MomentumOptimizer(lr, 0.5).minimize(self.loss)
 
         tf.add_to_collection(name="saved", value=self.loss)
         tf.add_to_collection(name="saved", value=self.model.prediction)
-        if self.model_name == "lstm":
-            tf.add_to_collection(name="saved", value=self.reconstruction)
+
 
         tf.add_to_collection(name="placeholder", value=self.x)
         tf.add_to_collection(name="placeholder", value=self.y)
@@ -164,12 +160,12 @@ class Pipeline:
 
         return np.mean(epoch_val_loss)
 
-    def test(self, x_test, y_test):
+    def test(self, x_test, y_test,z_test):
 
         epoch_test_loss = []
 
         self.sess.run(
-            self.iterator.initializer, feed_dict={self.x: x_test, self.y: y_test}
+            self.iterator.initializer, feed_dict={self.x: x_test, self.y: y_test,self.z:z_test}
         )
         try:
             while True:

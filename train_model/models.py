@@ -5,6 +5,7 @@ from cost import *
 
 def image_rotation(images, density,counts, go,semilla=42):
     if go:
+        print("rotando los datos")
         images_180    = tf.image.flip_up_down(images)
         images_fliped = tf.image.flip_left_right(images)
         images_fliped2 = tf.image.flip_left_right(images_180)
@@ -38,15 +39,23 @@ def image_rotation(images, density,counts, go,semilla=42):
 class Regressor_3:
     def __init__(self,
                  images,
+                 density,
                  counts,
-                 lr = 1e-6):
+                 lr = 1e-8):
+        self.lr = 1e-8
+        self.is_training = tf.placeholder(tf.bool,name="is_train")
+        self.keep_prob = tf.placeholder('float32', name='keep_prob')
+        
+
+        images, density,counts = tf.cond(self.is_training,
+                                lambda: image_rotation(images,density,counts,True),
+                                lambda: image_rotation(images,density,counts,False))
 
         self.lr = lr
         self.images = images
         self.counts = counts
-        # Probabilidad de prender una neurona
-        self.keep_prob = tf.placeholder('float32', name='keep_prob')
-        self.is_training = tf.placeholder(tf.bool, name="is_train");
+        self.density = density
+        
 
         with tf.name_scope('ARCH_R1'):
             conv_0 = conv_layer(images,
@@ -125,7 +134,7 @@ class Regressor_3:
                                           name='activated_output')
 
 
-    def loss(self):
+    def loss(self): 
         with tf.name_scope('Loss'):
             loss = tf.reduce_mean(tf.square(self.prediction -
                                   tf.cast(self.counts, 'float32')))
@@ -138,7 +147,7 @@ class MCNN:
                  images,
                  density,
                  counts,
-                 lr = 1e-8):
+                 lr = 1e-6):
         self.lr = lr
         self.is_training = tf.placeholder(tf.bool,name="is_train")
         self.keep_prob = tf.placeholder('float32', name='keep_prob')
@@ -317,6 +326,10 @@ class MCNN:
             # fuse layer
             # =================================================================
             suma = tf.concat([conv4_0,conv4_1,conv4_2],axis = 3)
+            # print(suma)
+
+            #spatialdropout
+            suma =spatial_dropout(suma, self.keep_prob, seed=42)
 
             conv_final = conv_layer(suma,
                                     channels_in=30,
@@ -348,6 +361,8 @@ class MCNN:
     def loss(self):
         # L2 Loss
         loss = tf.reduce_sum((self.prediction - self.density) * (self.prediction - self.density))
+        # loss = tf.losses.mean_squared_error(tf.reduce_sum(self.prediction),tf.reduce_sum(self.density)) 
+
         
         #mse a mano
         # loss = tf.sqrt(tf.reduce_mean(tf.square(self.prediction - self.density)))
@@ -383,9 +398,9 @@ class CCNN:
 
         self.counting = tf.placeholder(tf.bool,name="counting")
 
-        images, density,counts = tf.cond(self.is_training,
-                                lambda: image_rotation(images,density,counts,True),
-                                lambda: image_rotation(images,density,counts,False))
+        # images, density,counts = tf.cond(self.is_training,
+        #                         lambda: image_rotation(images,density,counts,True),
+        #                         lambda: image_rotation(images,density,counts,False))
                                 
         self.images = images
         self.density = density
@@ -427,7 +442,7 @@ class CCNN:
                                 channels_out=64,
                                 filter_size=(5,5),
                                 strides=[1,1,1,1],
-                                name='conv3_0',
+                                name='conv3',
                                 is_training=self.is_training)
             conv3 = tf.nn.relu(conv3)
 
@@ -443,7 +458,7 @@ class CCNN:
                                 channels_out=1000,
                                 filter_size=(1,1),
                                 strides=[1,1,1,1],
-                                name='conv4_0',
+                                name='conv4',
                                 is_training=self.is_training)
 
             conv4 = tf.nn.relu(conv4)
@@ -453,17 +468,17 @@ class CCNN:
                     channels_out=400,
                     filter_size=(1,1),
                     strides=[1,1,1,1],
-                    name='conv4_0',
+                    name='conv5',
                     is_training=self.is_training)
 
             conv5 = tf.nn.relu(conv5)
 
             conv6 = conv_layer(conv5,
-                    channels_in=1000,
-                    channels_out=400,
+                    channels_in=400,
+                    channels_out=1,
                     filter_size=(1,1),
                     strides=[1,1,1,1],
-                    name='conv4_0',
+                    name='conv6',
                     is_training=self.is_training)
 
             conv6 = tf.nn.relu(conv6)
@@ -517,7 +532,7 @@ class HYDRACNN:
            
         with tf.name_scope('prediction'):
             #salida
-            self.prediction = 
+            # self.prediction = 
             tf.summary.image('density_pred', self.prediction, 1)
             
 
