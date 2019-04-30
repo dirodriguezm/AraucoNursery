@@ -4,6 +4,7 @@ from osgeo import gdal, ogr, osr
 import cv2
 import numpy as np
 import pandas as pd
+from shapely.geometry import box
 import matplotlib.pyplot as plt
 
 def get_gaussian_kernel(fs_x, fs_y, sigma):
@@ -24,6 +25,7 @@ def get_gaussian_kernel(fs_x, fs_y, sigma):
 
 def get_density_map_gaussian(points, d_map_h, d_map_w, sigma=4):
     """
+    sOBREEESTIMA DENSIDAD EN LOS BORDES!
     Tomado de: https://github.com/aditya-vora/crowd_counting_tensorflow
     Creates density maps from ground truth point locations
     :param points: [x,y] x: along width, y: along height
@@ -42,19 +44,22 @@ def get_density_map_gaussian(points, d_map_h, d_map_w, sigma=4):
 
         f_sz = 15
         #         sigma = 4
-
+        #obtenemos el kernel
         gaussian_kernel = get_gaussian_kernel(f_sz, f_sz, sigma)
-
+        #obtenemos la posicion del pto con que estamos trabajando
         x = min(d_map_w, max(1, np.abs(np.int32(np.floor(points[i][0])))))
         y = min(d_map_h, max(1, np.abs(np.int32(np.floor(points[i][1])))))
 
         if x > d_map_w or y > d_map_h:
             continue
 
+        #creamos un circulo alredor del pto x e y
         x1 = x - np.int32(np.floor(f_sz / 2))
         y1 = y - np.int32(np.floor(f_sz / 2))
         x2 = x + np.int32(np.floor(f_sz / 2))
         y2 = y + np.int32(np.floor(f_sz / 2))
+
+
 
         dfx1 = 0
         dfy1 = 0
@@ -63,6 +68,8 @@ def get_density_map_gaussian(points, d_map_h, d_map_w, sigma=4):
 
         change_H = False
 
+        #revisamos que ningun pto se encuentre en el borde la imagen,
+        # ya que si es asi, debe recalcular el kernel y mover la posicion
         if x1 < 1:
             dfx1 = np.abs(x1) + 1
             x1 = 1
@@ -99,8 +106,35 @@ def get_density_map_gaussian(points, d_map_h, d_map_w, sigma=4):
         )
     return im_density
 
+def gaussian_filter_density_m2(gt):
+    print(gt.shape)
+    density = np.zeros(gt.shape, dtype=np.float32)
+    gt_count = np.count_nonzero(gt)
+    print(gt_count)
+    if gt_count == 0:
+        return density
 
-def get_coordenadas(raster, puntos, url_salida, nombre):
+    pts = np.array(list(zip(np.nonzero(gt)[1], np.nonzero(gt)[0])))
+
+    print(pts.shape)
+    leafsize = 2048
+    # build kdtree
+    print("build KDTREE")
+    tree = scipy.spatial.KDTree(pts.copy(), leafsize=leafsize)
+    # query kdtree
+    print("query KDTREE")
+    distances, locations = tree.query(pts, k=4)
+    print ('generate density...')
+    for i, pt in enumerate(pts):
+        pt2d = np.zeros(gt.shape, dtype=np.float32)
+        pt2d[pt[1],pt[0]] = 1.
+        sigma = (distances[i][1]+distances[i][2]+distances[i][3])*0.1
+        density += scipy.ndimage.filters.gaussian_filter(pt2d, sigma, mode='constant')
+    print ('done.')
+    return density
+
+
+def get_coordenadas_m2(raster, puntos, url_salida, nombre):
     print(url_salida + nombre + ".csv")
     """
     Dado un raster y un shapefile obtiene las posiciones de los puntos con respecto a x e y de la imagen.
@@ -126,9 +160,40 @@ def get_coordenadas(raster, puntos, url_salida, nombre):
     pixeles.to_csv(url_salida + nombre + ".csv")
 
     for element in range(pixeles.shape[0]):
-        coordenadas.append([pixeles["y"][element], pixeles["x"][element]])
+        coordenadas.append(pixeles["x"][element])
+        coordenadas.append(pixeles["y"][element])
+    coordenadas = np.array(coordenadas)
+    coordenadas = coordenadas.reshape((pixeles.shape[0]/2, 2))
+    # return coordenadas, pixeles,erradas
+    return coordenadas
 
-    return coordenadas, pixeles,erradas
+def get_coordenadas(raster, puntos, url_salida, nombre):
+    print(url_salida + nombre + ".csv")
+    """
+    Dado un raster y un shapefile obtiene las posiciones de los puntos con respecto a x e y de la imagen.
+    Genera un csv de la forma x, y (lat, lon)
+    :raster: corresponde a una imagen tiff abierta con rasterio
+    :puntos: Corresponde a un shapefile abierto en geopandas
+    :url_salida: carpeta donde se guardara el csv 
+    :nombre: nombre del csv con los puntos
+    :return: un array con los puntos de la forma y,x y un csv con los puntos
+    """
+    coordenadas = []
+    pixeles = pd.DataFrame(columns=["x", "y"])
+    for index in range(puntos.shape[0]):
+        try:
+            pl = raster.index(puntos["geometry"][index].bounds[0], puntos["geometry"][index].bounds[1])
+            bandera = True
+        except:
+            print(index)
+        if(bandera):
+            pixeles.loc[index] = [pl[0], pl[1]]
+    pixeles.to_csv(url_salida + nombre + ".csv")
+
+    for element in range(pixeles.shape[0]):
+        coordenadas.append((pixeles["y"][element], pixeles["x"][element]))
+
+    return coordenadas, pixeles
 
 
 def array_to_shp(matriz, raster, outputh_file, raster_NoDataValue=0):
@@ -322,3 +387,82 @@ def list_to_np_array(in_list):
         pad_w = max_w - item.shape[1]
         out_arr[i] = np.pad(item, ((0,pad_h),(0,pad_w),(0,0)), mode='constant', constant_values=0.)
     return out_arr
+
+def calc_ndvi(nir,red):
+#     ndvi = calc_ndvi(nir,red)
+    '''Calculate NDVI from integer arrays'''
+    nir = nir.astype('f4')
+    red = red.astype('f4')
+    ndvi = (nir - red) / (nir + red)
+    return ndvi
+
+
+def obtencion_pixeles_exteriores(raster,shapefile,rodal= None):##sacamos los pixeles donde 
+    import shapely
+    #bounding box del raster
+    #si esque tenemos un shapefile cortamos de acuerdo al shapefile
+    if(rodal):
+        pass
+#         rodal.bounds
+        
+    #cortamos los puntos de acuerdo al raster    
+    r = raster.bounds
+    bbox = box(r[0], r[1], r[2], r[3])
+    interseccion = shapefile.intersects(bbox)
+    shapefile = shapefile[interseccion]
+    print(type(shapefile))
+    # obtenemos los valores de las geometrias en una lista
+    geoms = shapefile.geometry.values
+    arboles_totales = []
+    for element in geoms:
+    
+        if(isinstance(element, shapely.geometry.polygon.Polygon)):
+#         print(element)
+        #guardamos lista de las coordenadas
+#         print(len(element.interior.coords.xy[0]))
+            coordenadas = extract_poly_coords(element)
+            
+    
+#             coordenadas = list(zip(element.exterior.coords.xy[0],element.exterior.coords.xy[1]))
+            #guardamos las coordenadas del arbol
+            arbol = []
+            for coord in coordenadas:
+                x,y = raster.index(coord[0],coord[1])
+                
+                arbol.append((x-1,y-1))
+            arbol = list(set(arbol))
+            arboles_totales.append(arbol)
+    return arboles_totales
+
+def generar_mapa_probabilidad(raster,arboles,desfase=0):
+    pos = np.zeros((raster.height,raster.width))
+    for ptos_arbol in arboles:
+        total = len(ptos_arbol)
+        for element in ptos_arbol:
+#             print(element)
+            pos[element[0]-desfase,element[1]-desfase] += (1/total)
+            #             if(element[0] < raster.height and element[1] < raster.width):
+
+    return pos
+
+def extract_poly_coords(geom):
+    total = []
+    if geom.type == 'Polygon':
+        exterior_coords = geom.exterior.coords[:]
+        interior_coords = []
+        for interior in geom.interiors:
+            interior_coords += interior.coords[:]
+    elif geom.type == 'MultiPolygon':
+        exterior_coords = []
+        interior_coords = []
+        for part in geom:
+            epc = extract_poly_coords(part)  # Recursive call
+            exterior_coords += epc['exterior_coords']
+            interior_coords += epc['interior_coords']
+    else:
+        raise ValueError('Unhandled geometry type: ' + repr(geom.type))
+    for element in exterior_coords:
+        total.append(element)
+    for element in interior_coords:
+        total.append(element)
+    return total
