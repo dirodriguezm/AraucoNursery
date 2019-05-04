@@ -388,14 +388,6 @@ def list_to_np_array(in_list):
         out_arr[i] = np.pad(item, ((0,pad_h),(0,pad_w),(0,0)), mode='constant', constant_values=0.)
     return out_arr
 
-def calc_ndvi(nir,red):
-#     ndvi = calc_ndvi(nir,red)
-    '''Calculate NDVI from integer arrays'''
-    nir = nir.astype('f4')
-    red = red.astype('f4')
-    ndvi = (nir - red) / (nir + red)
-    return ndvi
-
 
 def obtencion_pixeles_exteriores(raster,shapefile,rodal= None):##sacamos los pixeles donde 
     import shapely
@@ -466,3 +458,41 @@ def extract_poly_coords(geom):
     for element in interior_coords:
         total.append(element)
     return total
+
+def reducir_densidad(densidades,factor=4):
+    densidades_reducidas = []
+    for element in densidades:
+        img = cv2.resize(element,(int(element.shape[1]/factor),int(element.shape[0]/factor)),interpolation = cv2.INTER_CUBIC)*np.square(factor)
+        img = np.expand_dims(img,axis  = 3)
+        densidades_reducidas.append(img)
+    return densidades_reducidas
+
+#PROYECTOS/CONTEO_SATELITE/imagenes/
+def get_ndvi(raster,carpeta):
+    
+    b, g, r, n = raster.read()
+    np.seterr(divide='ignore', invalid='ignore')
+    # calculo NDVI 
+    ndvi = (n.astype(float) - r.astype(float)) / (n + r)
+    # get the metadata of original GeoTIFF:
+    meta = raster.meta
+    # get the dtype of our NDVI array:
+    ndvi_dtype = ndvi.dtype
+    # set the source metadata as kwargs we'll use to write the new data:
+    kwargs = meta
+    # update the 'dtype' value to match our NDVI array's dtype:
+    kwargs.update(dtype=ndvi_dtype)
+    # update the 'count' value since our output will no longer be a 4-band image:
+    kwargs.update(count=1)
+    # Finally, use rasterio to write new raster file 'data/ndvi.tif':
+    path = os.path.join(carpeta,'ndvi.tif')
+    with rasterio.open(path, 'w', **kwargs) as dst:
+        dst.write(ndvi, 1)
+    
+    return ndvi
+
+
+def ls(ruta):
+    from os import scandir, getcwd
+    from os.path import abspath
+    return [abspath(arch.path) for arch in scandir(ruta) if arch.is_file()]
